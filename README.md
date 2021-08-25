@@ -1,5 +1,5 @@
 # Database Conductor
-Creates a ZFS pool on a block device and managed an hierarchy of snapshots and clones.
+Creates a ZFS pool on a block device and manages an hierarchy of snapshots and clones.
 Includes tool to control the conductor service (conductorctl.py).
 
 ### Nomenclature:
@@ -23,9 +23,9 @@ cd /vagrant
 make all
 ```
 
-To use conductorctl, you can open another shell and use it from there or run it directly
-from your repository. In the latter case you need to create a virtualenv and activate
-it, as below:
+To use conductorctl, you can open another vagrant shell and use it from there or run it
+directly from your repository. In the latter case you need to create a virtualenv and
+activate it, as below:
 ```shell
 cd tools
 python3 -m venv venv

@@ -1,0 +1,25 @@
+name: Repo workflow
+
+on: [push]
+
+jobs:
+  python:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python 3.9
+        uses: actions/setup-python@v1
+        with:
+          python-version: 3.9
+      - name: Install dependencies
+        run: |
+          cd tools
+          python3 -m venv venv
+          venv/bin/pip install --upgrade pip
+          venv/bin/pip install -r requirements.txt
+      - name: Lint with pylint, flake8 and black
+        run: |
+          cd tools
+          venv/bin/pylint conductorctl.py
+          venv/bin/flake8 conductorctl.py
+          venv/bin/black conductorctl.py

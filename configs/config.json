@@ -1,0 +1,12 @@
+{
+  "service_name": "conductor",
+  "pool_name": "rootpool",
+  "pool_path": "/rootpool",
+  "pool_dev": "/dev/sdc",
+  "fs_name": "maria",
+  "fs_path": "/var/lib/mysql",
+  "cast_path": "/maria_cast",
+  "replica_path": "/maria_replica",
+  "port_from": 3307,
+  "port_to": 3399
+}

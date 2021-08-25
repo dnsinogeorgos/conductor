@@ -1,0 +1,237 @@
+openapi: 3.0.2
+info:
+  title: Database Conductor
+  version: 0.1.0
+
+servers:
+  - url: http://localhost:8080
+    description: Development instance
+
+paths:
+  /casts/{id}:
+    get:
+      summary: Returns a cast by ID
+      parameters:
+        - name: id
+          in: path
+          description: Unique ID of the cast
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Returns a cast JSON object
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/response_cast'
+        "404":
+          description: A cast with the provided ID was not found
+        "500":
+          description: Internal error
+    post:
+      summary: Create cast with ID
+      parameters:
+        - name: id
+          in: path
+          description: Unique ID of the cast
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: string
+      responses:
+        "201":
+          description: Creates and returns a cast JSON object
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/response_cast'
+        "409":
+          description: The cast with provided ID already exists
+        "500":
+          description: Internal error
+    delete:
+      summary: Delete a cast by ID
+      parameters:
+        - name: id
+          in: path
+          description: Unique ID of the cast
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: string
+      responses:
+        "204":
+          description: The cast with provided ID was deleted successfully
+        "404":
+          description: A cast with the provided ID was not found
+        "409":
+          description: The cast with provided ID contains replicas
+        "500":
+          description: Internal error
+  /casts:
+    get:
+      summary: Get list of casts
+      responses:
+        "200":
+          description: A JSON array of casts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/response_cast'
+                x-content-type: application/json
+        "500":
+          description: Internal error
+
+  /replicas/{castId}/{id}:
+    get:
+      summary: Returns a replica by ID
+      parameters:
+        - name: castId
+          in: path
+          description: Unique ID of the parent cast
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: string
+        - name: id
+          in: path
+          description: Unique ID of the replica
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Returns a replica JSON object
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/response_replica'
+                x-content-type: application/json
+        "404":
+          description: A replica and/or cast with the provided ID was not found
+        "500":
+          description: Internal error
+    post:
+      summary: Create replica in cast with ID
+      parameters:
+        - name: castId
+          in: path
+          description: Unique ID of the parent cast
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: string
+        - name: id
+          in: path
+          description: Unique ID of the replica
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: string
+      responses:
+        "201":
+          description: Creates and returns a replica JSON object
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/response_replica'
+                x-content-type: application/json
+        "404":
+          description: A replica with the provided ID was not found
+        "409":
+          description: The replica with provided ID already exists
+        "500":
+          description: Internal error
+    delete:
+      summary: Delete a replica by ID
+      parameters:
+        - name: castId
+          in: path
+          description: Unique ID of the parent cast
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: string
+        - name: id
+          in: path
+          description: Unique ID of the replica
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: string
+      responses:
+        "204":
+          description: The replica with provided ID was deleted successfully
+        "404":
+          description: A replica with the provided ID was not found
+        "500":
+          description: Internal error
+  /replicas/{castId}:
+    get:
+      summary: Get list of replicas by parent cast ID
+      parameters:
+        - name: castId
+          in: path
+          description: Unique ID of the parent cast
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: A JSON array of replicas
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/response_replica'
+                x-content-type: application/json
+        "404":
+          description: Cast with the provided ID was not found
+        "500":
+          description: Internal error
+components:
+  schemas:
+    response_cast:
+      type: object
+      properties:
+        id:
+          type: string
+        date:
+          type: string
+      example:
+        id: ThisnewCast
+        date: 2021-05-05T10:28:20Z
+    response_replica:
+      type: object
+      properties:
+        id:
+          type: string
+        castId:
+          type: string
+        port:
+          type: integer
+      example:
+        id: newReplicaFriday
+        castId: ThisnewCast
+        port: 3367

@@ -4,39 +4,46 @@ import (
 	"log"
 	"sync"
 
-	"github.com/dnsinogeorgos/conductor/internal/portmanager"
+	"github.com/dnsinogeorgos/conductor/internal/servicemanager"
 
+	"github.com/dnsinogeorgos/conductor/internal/portmanager"
 	"github.com/mistifyio/go-zfs"
 )
 
 // ZFS stores the state of the filesystem and the underlying hierarchy.
 type ZFS struct {
 	sync.RWMutex
-	PoolName    string
-	PoolPath    string
-	PoolDev     string
-	FsName      string
-	FsPath      string
-	CastPath    string
-	ReplicaPath string
-	PortManager *portmanager.PortManager
-	Filesystem  *zfs.Dataset
-	Casts       map[string]*Cast
+	PoolName       string
+	PoolPath       string
+	PoolDev        string
+	FsName         string
+	FsPath         string
+	CastPath       string
+	ReplicaPath    string
+	ServiceManager *servicemanager.ServiceManager
+	PortManager    *portmanager.PortManager
+	Filesystem     *zfs.Dataset
+	Casts          map[string]*Cast
 }
 
 // NewZFS creates a new filesystem or panics.
-func NewZFS(pn string, pd string, pp string, fn string, fp string, cp string, rp string, pstart uint16, pend uint16) *ZFS {
+func NewZFS(pn string, pd string, pp string, fn string, fp string, cp string, rp string, sun string, pstart uint16, pend uint16) *ZFS {
+	um, err := servicemanager.NewServiceManager(sun)
+	if err != nil {
+		panic(err)
+	}
 	pm := portmanager.NewPortManager(pstart, pend)
 
 	fs := &ZFS{
-		PoolName:    pn,
-		PoolDev:     pd,
-		PoolPath:    pp,
-		FsName:      fn,
-		FsPath:      fp,
-		CastPath:    cp,
-		ReplicaPath: rp,
-		PortManager: pm,
+		PoolName:       pn,
+		PoolDev:        pd,
+		PoolPath:       pp,
+		FsName:         fn,
+		FsPath:         fp,
+		CastPath:       cp,
+		ReplicaPath:    rp,
+		ServiceManager: um,
+		PortManager:    pm,
 	}
 
 	pool := CreatePool(pn, pd, pp)

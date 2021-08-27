@@ -1,0 +1,30 @@
+[Unit]
+Description=MariaDB database server (multi-instance %I)
+Documentation=https://mariadb.com/kb/en/library/systemd/
+After=network.target
+ConditionPathExists=!/etc/mysql/mariadb.conf.d/my%I.cnf
+
+[Install]
+WantedBy=multi-user.target
+[Service]
+Type=notify
+PrivateNetwork=false
+CapabilityBoundingSet=CAP_IPC_LOCK CAP_DAC_OVERRIDE CAP_AUDIT_WRITE
+PrivateDevices=false
+ProtectSystem=full
+ProtectHome=true
+ExecStartPre=/usr/bin/mysql_install_db $MYSQLD_MULTI_INSTANCE
+ExecStart=/usr/sbin/mariadbd $MYSQLD_MULTI_INSTANCE $MYSQLD_OPTS
+ExecStartPost=/etc/mysql/debian-start
+KillSignal=SIGTERM
+SendSIGKILL=no
+Restart=on-abort
+RestartSec=5s
+UMask=007
+PrivateTmp=false
+TimeoutStartSec=900
+TimeoutStopSec=900
+Environment='MYSQLD_MULTI_INSTANCE=--defaults-group-suffix=.%I'
+User=mysql
+Group=mysql
+LimitNOFILE=32768

@@ -1,0 +1,21 @@
+[mysqld]
+
+user                    = mysql
+pid-file                = /run/mysqld/mysqld{{ PORT }}.pid
+basedir                 = /usr
+datadir                 = {{ DATADIR }}
+tmpdir                  = /tmp
+lc-messages-dir         = /usr/share/mysql
+lc-messages             = en_US
+skip-external-locking
+
+socket                  = /run/mysqld/mysqld{{ PORT }}.sock
+bind-address            = 0.0.0.0
+port                    = 0
+
+log_error = /var/log/mysql/error{{ PORT }}.log
+
+expire_logs_days        = 10
+
+character-set-server  = utf8mb4
+collation-server      = utf8mb4_general_ci

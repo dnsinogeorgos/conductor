@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-usage: conductorctl [-h] [-c CAST] [-r REPLICA] [-f] {list,create,remove,refresh}
+usage: conductorctl [-h] [-c CAST] [-r REPLICA] [-f] {list,create,delete,refresh}
 
 positional arguments:
-  {list,create,remove,refresh}
+  {list,create,delete,refresh}
                         Action to take.
 
 optional arguments:
@@ -18,13 +18,13 @@ optional arguments:
 import sys
 from argparse import ArgumentParser
 from http.client import responses as rsp
-from prettytable import PrettyTable
+from prettytable import PrettyTable, MARKDOWN
 import requests
 
 
 # CONSTANTS
 URL = "http://localhost:8080"
-ACTIONS = ["list", "create", "remove", "refresh"]
+ACTIONS = ["list", "create", "delete", "refresh"]
 
 
 # ARGUMENT PARSING
@@ -47,7 +47,8 @@ def print_table(cast_id=None):
     table = PrettyTable(["Date", "Cast", "Replica", "Port"])
     for row in populate_table(cast_id):
         table.add_row(row)
-    print(table)
+    table.set_style(MARKDOWN)
+    print(table.get_string(sortby="Date",reversesort=True))
 
 
 def put(cast_id, replica_id, force):
@@ -224,7 +225,7 @@ if args.action == "list":
 if args.action == "create":
     put(args.cast, args.replica, args.force)
 
-if args.action == "remove":
+if args.action == "delete":
     delete(args.cast, args.replica, args.force)
 
 if args.action == "refresh":

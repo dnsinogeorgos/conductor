@@ -30,6 +30,11 @@ func (fs *ZFS) CreateCast(name string) (*Cast, error) {
 	fs.Lock()
 	defer fs.Unlock()
 
+	err := fs.ServiceManager.StopMain()
+	if err != nil {
+		return &Cast{}, StopMainError{s: fmt.Sprintf("could not stop main unit %s\n", fs.ServiceManager.MainServiceMane)}
+	}
+
 	castName := fs.PoolName + "/" + fs.FsName + "/" + name
 	mountPoint := fs.CastPath + "/" + name
 	p := map[string]string{
@@ -69,6 +74,11 @@ func (fs *ZFS) CreateCast(name string) (*Cast, error) {
 	}
 
 	fs.Casts[castName] = cast
+
+	err = fs.ServiceManager.StartMain()
+	if err != nil {
+		return &Cast{}, StopMainError{s: fmt.Sprintf("could not stop main unit %s\n", fs.ServiceManager.MainServiceMane)}
+	}
 
 	return cast, nil
 }
@@ -118,7 +128,10 @@ func (fs *ZFS) DeleteCast(name string) error {
 		}
 		err = os.Remove(fs.ReplicaPath + "/" + name)
 		if err != nil {
-			return err
+			_, ok = err.(*os.PathError)
+			if !ok {
+				return err
+			}
 		}
 	} else {
 		return CastNotFoundError{s: fmt.Sprintf("could not find cast %s in filesystem %s\n", name, fs.FsName)}

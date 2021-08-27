@@ -1,14 +1,12 @@
 package main
 
 import (
-	"context"
 	"flag"
 	"log"
 	"net/http"
 
 	"github.com/dnsinogeorgos/conductor/internal/api"
 	"github.com/dnsinogeorgos/conductor/internal/config"
-	"github.com/dnsinogeorgos/conductor/internal/systemd"
 	"github.com/dnsinogeorgos/conductor/internal/zfs"
 )
 
@@ -29,16 +27,11 @@ func main() {
 		c.FsPath,
 		c.CastPath,
 		c.ReplicaPath,
+		c.SystemdUnitName,
 		c.PortLowerBound,
 		c.PortUpperBound,
 	)
 	fs.MustLoadAll()
-
-	ctx := context.Background()
-	err := systemd.MainService(ctx, "mariadb")
-	if err != nil {
-		log.Printf("%s\n", err)
-	}
 
 	log.Printf("Server started")
 

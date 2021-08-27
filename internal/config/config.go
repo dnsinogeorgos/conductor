@@ -7,16 +7,17 @@ import (
 
 // Config stores the configuration loaded during startup.
 type Config struct {
-	ServiceName    string `json:"service_name"`
-	PoolName       string `json:"pool_name"`
-	PoolPath       string `json:"pool_path"`
-	PoolDev        string `json:"pool_dev"`
-	FsName         string `json:"fs_name"`
-	FsPath         string `json:"fs_path"`
-	CastPath       string `json:"cast_path"`
-	ReplicaPath    string `json:"replica_path"`
-	PortLowerBound uint16 `json:"port_from"`
-	PortUpperBound uint16 `json:"port_to"`
+	ServiceName     string `json:"service_name"`
+	PoolName        string `json:"pool_name"`
+	PoolPath        string `json:"pool_path"`
+	PoolDev         string `json:"pool_dev"`
+	FsName          string `json:"fs_name"`
+	FsPath          string `json:"fs_path"`
+	CastPath        string `json:"cast_path"`
+	ReplicaPath     string `json:"replica_path"`
+	PortLowerBound  uint16 `json:"port_from"`
+	PortUpperBound  uint16 `json:"port_to"`
+	SystemdUnitName string `json:"systemd_unit_name"`
 }
 
 // NewConfig creates an empty config instance.

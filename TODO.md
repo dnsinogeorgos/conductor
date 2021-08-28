@@ -30,15 +30,27 @@ preparing phase, a template unit will be started for the lifetime of the hook ex
 
 ---
 
+- [x] logging
+  - [x] use error types
+  - [x] stdout for access logs, stderr for the rest
+  - [x] use minimal log levels, just debug and warn
 - [x] api
 - [ ] zfs
   - [ ] move config structs into zfs module
-  - [ ] cast lifecycle created -> preparing -> ready
+  - [ ] support config from json but also environment variables
+  - [ ] cast lifecycle and status in state: created -> preparing -> ready
   - [ ] implement cast creation hooks
   - [ ] support different zfs setups
+  - [ ] handle signals, exit gracefully
 - [ ] portmanager
   - [ ] add proper code comments
 - [ ] servicemanager
-  - [x] implement main service stop/start
-  - [ ] implement replica service start/stop
-  - [ ] implement cast service start/stop
+  - [x] main service stop/start
+  - [ ] replica service start/stop
+  - [ ] cast service start/stop for hooks
+  - [ ] run as goroutine and communicate over channels
+  - [ ] add proper rate limits / backoff timers
+- [ ] other
+  - [x] cleanup main, create run
+  - [ ] graceful shutdown, wait for lock then exit
+  - [ ] write tests

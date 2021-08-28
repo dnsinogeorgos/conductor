@@ -15,6 +15,7 @@ apt-get -yq install \
               software-properties-common \
               unzip \
               wget \
+              net-tools \
               python3-pip \
               libzfslinux-dev \
               zfsutils-linux
@@ -23,8 +24,8 @@ rm -f /home/"$(id -nu 1000)"/.bash_profile
 sudo -u "$(id -nu 1000)" echo -e "\ncd $VAGRANT_DIR" >> /home/"$(id -nu 1000)"/.bashrc
 
 # creating zpool and mariadb dataset
-zpool create rootpool /dev/sdc
-zfs create rootpool/maria -o mountpoint=/var/lib/mysql
+#zpool create rootpool /dev/sdc
+#zfs create rootpool/maria -o mountpoint=/var/lib/mysql
 
 # install, enable and start mariadb
 apt-key adv --fetch-keys "https://mariadb.org/mariadb_release_signing_key.asc"
@@ -43,6 +44,6 @@ pip install -r "$VAGRANT_DIR/tools/requirements.txt"
 ln -s "$VAGRANT_DIR/tools/conductorctl.py" /usr/local/bin/conductorctl
 
 # secure, stop mariadb && reboot
-cat configs/answers.txt | mariadb-secure-installation
+#cat configs/answers.txt | sudo mariadb-secure-installation
 systemctl stop mariadb
 systemctl reboot

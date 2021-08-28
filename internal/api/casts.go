@@ -3,15 +3,13 @@ package api
 import (
 	"net/http"
 
-	"github.com/go-chi/httplog"
-
-	"github.com/dnsinogeorgos/conductor/internal/zfs"
+	"github.com/dnsinogeorgos/conductor/internal/conductor"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 )
 
 type CastsResource struct {
-	*zfs.ZFS
+	*conductor.Conductor
 }
 
 type CastResponse struct {
@@ -20,21 +18,20 @@ type CastResponse struct {
 }
 
 // CastsIdDelete deletes a cast from the filesystem.
-func (cs CastsResource) CastsIdDelete(w http.ResponseWriter, r *http.Request) {
+func (cr CastsResource) CastsIdDelete(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 
-	err := cs.DeleteCast(id)
+	err := cr.DeleteCast(id)
 	if err != nil {
 		switch e := err.(type) {
-		case zfs.CastContainsReplicasError:
+		case conductor.CastContainsReplicasError:
 			w.WriteHeader(http.StatusConflict)
 			return
-		case zfs.CastNotFoundError:
+		case conductor.CastNotFoundError:
 			w.WriteHeader(http.StatusNotFound)
 			return
 		default:
-			l := httplog.LogEntry(r.Context())
-			l.Error().Msgf(e.Error())
+			_ = e
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -43,18 +40,17 @@ func (cs CastsResource) CastsIdDelete(w http.ResponseWriter, r *http.Request) {
 }
 
 // CastsIdGet gets a cast from the filesystem.
-func (cs CastsResource) CastsIdGet(w http.ResponseWriter, r *http.Request) {
+func (cr CastsResource) CastsIdGet(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 
-	cast, err := cs.GetCast(id)
+	cast, err := cr.GetCast(id)
 	if err != nil {
 		switch e := err.(type) {
-		case zfs.CastNotFoundError:
+		case conductor.CastNotFoundError:
 			w.WriteHeader(http.StatusNotFound)
 			return
 		default:
-			l := httplog.LogEntry(r.Context())
-			l.Error().Msgf(e.Error())
+			_ = e
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -68,18 +64,17 @@ func (cs CastsResource) CastsIdGet(w http.ResponseWriter, r *http.Request) {
 }
 
 // CastsIdPost creates a cast on the filesystem.
-func (cs CastsResource) CastsIdPost(w http.ResponseWriter, r *http.Request) {
+func (cr CastsResource) CastsIdPost(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 
-	cast, err := cs.CreateCast(id)
+	cast, err := cr.CreateCast(id)
 	if err != nil {
 		switch e := err.(type) {
-		case zfs.CastAlreadyExistsError:
+		case conductor.CastAlreadyExistsError:
 			w.WriteHeader(http.StatusConflict)
 			return
 		default:
-			l := httplog.LogEntry(r.Context())
-			l.Error().Msgf(e.Error())
+			_ = e
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -94,9 +89,9 @@ func (cs CastsResource) CastsIdPost(w http.ResponseWriter, r *http.Request) {
 }
 
 // CastsGet returns a list of the casts on the filesystem.
-func (cs CastsResource) CastsGet(w http.ResponseWriter, r *http.Request) {
+func (cr CastsResource) CastsGet(w http.ResponseWriter, r *http.Request) {
 
-	casts := cs.ListCasts()
+	casts := cr.ListCasts()
 	result := make([]CastResponse, 0)
 	for _, cast := range casts {
 		item := CastResponse{

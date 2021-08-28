@@ -3,37 +3,34 @@ package api
 import (
 	"net/http"
 
-	"github.com/go-chi/httplog"
-
-	"github.com/dnsinogeorgos/conductor/internal/zfs"
+	"github.com/dnsinogeorgos/conductor/internal/conductor"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 )
 
 type ReplicasResource struct {
-	*zfs.ZFS
+	*conductor.Conductor
 }
 
 type ReplicaResponse struct {
 	Id     string `json:"id"`
 	CastId string `json:"castId"`
-	Port   uint16 `json:"port"`
+	Port   int32  `json:"port"`
 }
 
 // ReplicasCastIdIdDelete deletes a replica from the provided cast.
-func (rs ReplicasResource) ReplicasCastIdIdDelete(w http.ResponseWriter, r *http.Request) {
+func (rr ReplicasResource) ReplicasCastIdIdDelete(w http.ResponseWriter, r *http.Request) {
 	castId := chi.URLParam(r, "castId")
 	id := chi.URLParam(r, "id")
 
-	cast, err := rs.GetCast(castId)
+	cast, err := rr.GetCast(castId)
 	if err != nil {
 		switch e := err.(type) {
-		case zfs.CastNotFoundError:
+		case conductor.CastNotFoundError:
 			w.WriteHeader(http.StatusNotFound)
 			return
 		default:
-			l := httplog.LogEntry(r.Context())
-			l.Error().Msgf(e.Error())
+			_ = e
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -42,12 +39,11 @@ func (rs ReplicasResource) ReplicasCastIdIdDelete(w http.ResponseWriter, r *http
 	err = cast.DeleteReplica(id)
 	if err != nil {
 		switch e := err.(type) {
-		case zfs.ReplicaNotFoundError:
+		case conductor.ReplicaNotFoundError:
 			w.WriteHeader(http.StatusNotFound)
 			return
 		default:
-			l := httplog.LogEntry(r.Context())
-			l.Error().Msgf(e.Error())
+			_ = e
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -56,19 +52,18 @@ func (rs ReplicasResource) ReplicasCastIdIdDelete(w http.ResponseWriter, r *http
 }
 
 // ReplicasCastIdIdGet gets a replica from the provided cast.
-func (rs ReplicasResource) ReplicasCastIdIdGet(w http.ResponseWriter, r *http.Request) {
+func (rr ReplicasResource) ReplicasCastIdIdGet(w http.ResponseWriter, r *http.Request) {
 	castId := chi.URLParam(r, "castId")
 	id := chi.URLParam(r, "id")
 
-	cast, err := rs.GetCast(castId)
+	cast, err := rr.GetCast(castId)
 	if err != nil {
 		switch e := err.(type) {
-		case zfs.CastNotFoundError:
+		case conductor.CastNotFoundError:
 			w.WriteHeader(http.StatusNotFound)
 			return
 		default:
-			l := httplog.LogEntry(r.Context())
-			l.Error().Msgf(e.Error())
+			_ = e
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -77,12 +72,11 @@ func (rs ReplicasResource) ReplicasCastIdIdGet(w http.ResponseWriter, r *http.Re
 	replica, err := cast.GetReplica(id)
 	if err != nil {
 		switch e := err.(type) {
-		case zfs.ReplicaNotFoundError:
+		case conductor.ReplicaNotFoundError:
 			w.WriteHeader(http.StatusNotFound)
 			return
 		default:
-			l := httplog.LogEntry(r.Context())
-			l.Error().Msgf(e.Error())
+			_ = e
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -98,19 +92,18 @@ func (rs ReplicasResource) ReplicasCastIdIdGet(w http.ResponseWriter, r *http.Re
 }
 
 // ReplicasCastIdIdPost creates a replica in the provided cast.
-func (rs ReplicasResource) ReplicasCastIdIdPost(w http.ResponseWriter, r *http.Request) {
+func (rr ReplicasResource) ReplicasCastIdIdPost(w http.ResponseWriter, r *http.Request) {
 	castId := chi.URLParam(r, "castId")
 	id := chi.URLParam(r, "id")
 
-	cast, err := rs.GetCast(castId)
+	cast, err := rr.GetCast(castId)
 	if err != nil {
 		switch e := err.(type) {
-		case zfs.CastNotFoundError:
+		case conductor.CastNotFoundError:
 			w.WriteHeader(http.StatusNotFound)
 			return
 		default:
-			l := httplog.LogEntry(r.Context())
-			l.Error().Msgf(e.Error())
+			_ = e
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -119,12 +112,11 @@ func (rs ReplicasResource) ReplicasCastIdIdPost(w http.ResponseWriter, r *http.R
 	replica, err := cast.CreateReplica(id)
 	if err != nil {
 		switch e := err.(type) {
-		case zfs.ReplicaAlreadyExistsError:
+		case conductor.ReplicaAlreadyExistsError:
 			w.WriteHeader(http.StatusConflict)
 			return
 		default:
-			l := httplog.LogEntry(r.Context())
-			l.Error().Msgf(e.Error())
+			_ = e
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -140,18 +132,17 @@ func (rs ReplicasResource) ReplicasCastIdIdPost(w http.ResponseWriter, r *http.R
 }
 
 // ReplicasCastIdGet returns a list of the replicas on a provided cast.
-func (rs ReplicasResource) ReplicasCastIdGet(w http.ResponseWriter, r *http.Request) {
+func (rr ReplicasResource) ReplicasCastIdGet(w http.ResponseWriter, r *http.Request) {
 	castId := chi.URLParam(r, "castId")
 
-	cast, err := rs.GetCast(castId)
+	cast, err := rr.GetCast(castId)
 	if err != nil {
 		switch e := err.(type) {
-		case zfs.CastNotFoundError:
+		case conductor.CastNotFoundError:
 			w.WriteHeader(http.StatusNotFound)
 			return
 		default:
-			l := httplog.LogEntry(r.Context())
-			l.Error().Msgf(e.Error())
+			_ = e
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}

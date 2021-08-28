@@ -1,14 +1,16 @@
 {
-  "cnf_path": "/etc/mysql/mariadb.conf.d",
-  "service_name": "conductor",
+  "debug":  true,
+  "address": "0.0.0.0",
+  "port": 8080,
+
   "pool_name": "rootpool",
   "pool_path": "/rootpool",
   "pool_dev": "/dev/sdc",
-  "fs_name": "maria",
-  "fs_path": "/var/lib/mysql",
+  "filesystem_name": "maria",
+  "filesystem_path": "/var/lib/mysql",
   "cast_path": "/maria_cast",
   "replica_path": "/maria_replica",
   "port_from": 3307,
   "port_to": 3399,
-  "systemd_unit_name": "mariadb.service"
+  "main_unit_name": "mariadb.service"
 }

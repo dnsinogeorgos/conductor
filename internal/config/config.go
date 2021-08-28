@@ -2,33 +2,81 @@ package config
 
 import (
 	"encoding/json"
+	"flag"
 	"io/ioutil"
+	"os"
+
+	"github.com/kelseyhightower/envconfig"
 )
 
 // Config stores the configuration loaded during startup.
 type Config struct {
-	ServiceName     string `json:"service_name"`
-	PoolName        string `json:"pool_name"`
-	PoolPath        string `json:"pool_path"`
-	PoolDev         string `json:"pool_dev"`
-	FsName          string `json:"fs_name"`
-	FsPath          string `json:"fs_path"`
-	CastPath        string `json:"cast_path"`
-	ReplicaPath     string `json:"replica_path"`
-	PortLowerBound  uint16 `json:"port_from"`
-	PortUpperBound  uint16 `json:"port_to"`
-	SystemdUnitName string `json:"systemd_unit_name"`
+	Debug   bool   `json:"debug"`
+	Address string `json:"address"`
+	Port    int32  `json:"port"`
+
+	PoolName       string `json:"pool_name" split_words:"true"`
+	PoolPath       string `json:"pool_path" split_words:"true"`
+	PoolDev        string `json:"pool_dev" split_words:"true"`
+	FilesystemName string `json:"filesystem_name" split_words:"true"`
+	FilesystemPath string `json:"filesystem_path" split_words:"true"`
+	CastPath       string `json:"cast_path" split_words:"true"`
+	ReplicaPath    string `json:"replica_path" split_words:"true"`
+	PortLowerBound int32  `json:"port_from" split_words:"true"`
+	PortUpperBound int32  `json:"port_to" split_words:"true"`
+	MainUnitName   string `json:"main_unit_name" split_words:"true"`
 }
 
 // NewConfig creates an empty config instance.
-func NewConfig(p string) (*Config, error) {
-	c := Config{}
-	err := c.LoadJson(p)
+func NewConfig(name string) (*Config, error) {
+	configfile := flag.String("c", "conductor.json", "path to configuration file")
+	flag.Parse()
+
+	config := Config{
+		Debug:          false,
+		Address:        "127.0.0.1",
+		Port:           8080,
+		PoolName:       "rootpool",
+		PoolPath:       "/rootpool",
+		FilesystemName: "rootfs",
+		CastPath:       "/rootfs_cast",
+		ReplicaPath:    "/rootfs_replica",
+	}
+
+	err := envconfig.Process(name, &config)
 	if err != nil {
 		return &Config{}, err
 	}
 
-	return &c, nil
+	err = config.LoadJson(*configfile)
+	if err != nil {
+		_, ok := err.(*os.PathError)
+		if !ok {
+			return &Config{}, err
+		}
+	}
+
+	if config.PoolDev == "" {
+		return &Config{}, MissingConfigurationVariableError{t: "string", n: "PoolDev"}
+	}
+
+	if config.FilesystemPath == "" {
+		return &Config{}, MissingConfigurationVariableError{t: "string", n: "FilesystemPath"}
+	}
+
+	if config.PortLowerBound == 0 {
+		return &Config{}, MissingConfigurationVariableError{t: "int", n: "PortLowerBound"}
+	}
+
+	if config.PortUpperBound == 0 {
+		return &Config{}, MissingConfigurationVariableError{t: "int", n: "PortUpperBound"}
+	}
+
+	if config.MainUnitName == "" {
+		return &Config{}, MissingConfigurationVariableError{t: "string", n: "MainUnitName"}
+	}
+
+	return &config, nil
 }
 
 // LoadJson loads the json values to the config instance.

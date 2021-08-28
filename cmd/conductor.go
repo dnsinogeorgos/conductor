@@ -1,41 +1,46 @@
 package main
 
 import (
-	"flag"
+	"fmt"
 	"log"
 	"net/http"
+	"os"
+	"strconv"
+
+	"go.uber.org/zap"
 
 	"github.com/dnsinogeorgos/conductor/internal/api"
+	"github.com/dnsinogeorgos/conductor/internal/conductor"
 	"github.com/dnsinogeorgos/conductor/internal/config"
-	"github.com/dnsinogeorgos/conductor/internal/zfs"
 )
 
-func main() {
-	configfile := flag.String("c", "conductor.json", "path to configuration file")
-	flag.Parse()
+const appName = "conductor"
 
-	c, e := config.NewConfig(*configfile)
-	if e != nil {
-		log.Fatal(e)
+func main() {
+	if err := run(); err != nil {
+		fmt.Fprintf(os.Stderr, "%s\n", err)
+		os.Exit(1)
+	}
+}
+
+func run() error {
+	cfg, err := config.NewConfig(appName)
+	if err != nil {
+		return err
 	}
 
-	fs := zfs.NewZFS(
-		c.PoolName,
-		c.PoolDev,
-		c.PoolPath,
-		c.FsName,
-		c.FsPath,
-		c.CastPath,
-		c.ReplicaPath,
-		c.SystemdUnitName,
-		c.PortLowerBound,
-		c.PortUpperBound,
-	)
-	fs.MustLoadAll()
+	logger, _ := zap.NewProduction()
+	if cfg.Debug == true {
+		logger, _ = zap.NewDevelopment()
+	}
+	defer logger.Sync()
 
-	log.Printf("Server started")
+	cnd := conductor.New(cfg, logger)
+	logger.Info("server started")
 
-	router := api.NewRouter(c.ServiceName, fs)
+	router := api.NewRouter(cnd)
+	addr := cfg.Address + ":" + strconv.Itoa(int(cfg.Port))
+	log.Fatal(http.ListenAndServe(addr, router))
 
-	log.Fatal(http.ListenAndServe(":8080", router))
+	return nil
 }

@@ -7,6 +7,6 @@ lint:
 	black tools/conductorctl.py
 
 run:
-	sudo ./conductor -c configs/config.json
+	sudo ./conductor -c configs/config.json 2>> logs/stderr.log >> logs/stdout.log
 
 all: build run

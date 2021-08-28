@@ -1,5 +1,6 @@
 # Database Conductor
-Creates a ZFS pool on a block device and manages an hierarchy of snapshots and clones.
+Creates a ZFS pool on a block device, manages an hierarchy of snapshots and clones. In
+tandem 
 Includes tool to control the conductor service (conductorctl.py).
 
 ### Nomenclature:
@@ -19,7 +20,6 @@ localhost. You will then have access from your local browser and your IDE.
 ```shell
 vagrant up
 vagrant ssh
-cd /vagrant
 make all
 ```
 

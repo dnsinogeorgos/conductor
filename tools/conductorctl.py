@@ -28,17 +28,17 @@ ACTIONS = ["list", "create", "delete", "refresh"]
 
 
 # ARGUMENT PARSING
-parser = ArgumentParser(prog="conductorctl")
-parser.add_argument("action", type=str, choices=ACTIONS, help="Action to take.")
-parser.add_argument("-c", "--cast", type=str, help="Name of cast.")
-parser.add_argument("-r", "--replica", type=str, help="Name of replica.")
-parser.add_argument(
+PARSER = ArgumentParser(prog="conductorctl")
+PARSER.add_argument("action", type=str, choices=ACTIONS, help="Action to take.")
+PARSER.add_argument("-c", "--cast", type=str, help="Name of cast.")
+PARSER.add_argument("-r", "--replica", type=str, help="Name of replica.")
+PARSER.add_argument(
     "-f",
     "--force",
     action="store_true",
     help="Whether to force action by deleting child replicas or parent cast.",
 )
-args = parser.parse_args()
+ARGS = PARSER.parse_args()
 
 
 # LOGIC
@@ -48,7 +48,7 @@ def print_table(cast_id=None):
     for row in populate_table(cast_id):
         table.add_row(row)
     table.set_style(MARKDOWN)
-    print(table.get_string(sortby="Date",reversesort=True))
+    print(table.get_string(sortby="Date", reversesort=True))
 
 
 def put(cast_id, replica_id, force):
@@ -203,30 +203,30 @@ def delete_replica(cast_id, replica_id):
 
 
 # WIRING
-if args.action == "ls":
-    if args.replica or args.force is True:
-        parser.error("action {} accepts only --cast argument".format(args.action))
+if ARGS.action == "ls":
+    if ARGS.replica or ARGS.force is True:
+        PARSER.error("action {} accepts only --cast argument".format(ARGS.action))
 
-if args.action in ["add", "refresh", "rm"]:
-    if args.cast is None:
-        parser.error("action {} requires --cast argument".format(args.action))
-    if args.cast == "":
-        parser.error("--cast argument cannot be empty string")
-    if args.replica == "":
-        parser.error("--cast argument cannot be empty string")
+if ARGS.action in ["add", "refresh", "rm"]:
+    if ARGS.cast is None:
+        PARSER.error("action {} requires --cast argument".format(ARGS.action))
+    if ARGS.cast == "":
+        PARSER.error("--cast argument cannot be empty string")
+    if ARGS.replica == "":
+        PARSER.error("--cast argument cannot be empty string")
 
-if args.replica:
-    if args.cast is None:
-        parser.error("--replica argument requires --cast")
+if ARGS.replica:
+    if ARGS.cast is None:
+        PARSER.error("--replica argument requires --cast")
 
-if args.action == "list":
-    print_table(args.cast)
+if ARGS.action == "list":
+    print_table(ARGS.cast)
 
-if args.action == "create":
-    put(args.cast, args.replica, args.force)
+if ARGS.action == "create":
+    put(ARGS.cast, ARGS.replica, ARGS.force)
 
-if args.action == "delete":
-    delete(args.cast, args.replica, args.force)
+if ARGS.action == "delete":
+    delete(ARGS.cast, ARGS.replica, ARGS.force)
 
-if args.action == "refresh":
-    update(args.cast, args.replica, args.force)
+if ARGS.action == "refresh":
+    update(ARGS.cast, ARGS.replica, ARGS.force)

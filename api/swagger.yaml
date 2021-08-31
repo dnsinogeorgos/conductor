@@ -217,11 +217,11 @@ components:
       properties:
         id:
           type: string
-        date:
+        timestamp:
           type: string
       example:
         id: ThisnewCast
-        date: 2021-05-05T10:28:20Z
+        timestamp: 2021-05-05T10:28:20Z
     response_replica:
       type: object
       properties:

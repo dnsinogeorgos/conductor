@@ -8,10 +8,12 @@ import (
 	"github.com/go-chi/render"
 )
 
+// ReplicasResource embeds the conductor type to allow the use of its exported methods
 type ReplicasResource struct {
 	*conductor.Conductor
 }
 
+// ReplicaResponse describes the API replica response object
 type ReplicaResponse struct {
 	Id     string `json:"id"`
 	CastId string `json:"castId"`
@@ -23,22 +25,12 @@ func (rr ReplicasResource) ReplicasCastIdIdDelete(w http.ResponseWriter, r *http
 	castId := chi.URLParam(r, "castId")
 	id := chi.URLParam(r, "id")
 
-	cast, err := rr.GetCast(castId)
+	err := rr.DeleteReplica(castId, id)
 	if err != nil {
 		switch e := err.(type) {
 		case conductor.CastNotFoundError:
 			w.WriteHeader(http.StatusNotFound)
 			return
-		default:
-			_ = e
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-	}
-
-	err = cast.DeleteReplica(id)
-	if err != nil {
-		switch e := err.(type) {
 		case conductor.ReplicaNotFoundError:
 			w.WriteHeader(http.StatusNotFound)
 			return
@@ -56,22 +48,12 @@ func (rr ReplicasResource) ReplicasCastIdIdGet(w http.ResponseWriter, r *http.Re
 	castId := chi.URLParam(r, "castId")
 	id := chi.URLParam(r, "id")
 
-	cast, err := rr.GetCast(castId)
+	replica, err := rr.GetReplica(castId, id)
 	if err != nil {
 		switch e := err.(type) {
 		case conductor.CastNotFoundError:
 			w.WriteHeader(http.StatusNotFound)
 			return
-		default:
-			_ = e
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-	}
-
-	replica, err := cast.GetReplica(id)
-	if err != nil {
-		switch e := err.(type) {
 		case conductor.ReplicaNotFoundError:
 			w.WriteHeader(http.StatusNotFound)
 			return
@@ -96,22 +78,12 @@ func (rr ReplicasResource) ReplicasCastIdIdPost(w http.ResponseWriter, r *http.R
 	castId := chi.URLParam(r, "castId")
 	id := chi.URLParam(r, "id")
 
-	cast, err := rr.GetCast(castId)
+	replica, err := rr.CreateReplica(castId, id)
 	if err != nil {
 		switch e := err.(type) {
 		case conductor.CastNotFoundError:
 			w.WriteHeader(http.StatusNotFound)
 			return
-		default:
-			_ = e
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-	}
-
-	replica, err := cast.CreateReplica(id)
-	if err != nil {
-		switch e := err.(type) {
 		case conductor.ReplicaAlreadyExistsError:
 			w.WriteHeader(http.StatusConflict)
 			return
@@ -135,7 +107,7 @@ func (rr ReplicasResource) ReplicasCastIdIdPost(w http.ResponseWriter, r *http.R
 func (rr ReplicasResource) ReplicasCastIdGet(w http.ResponseWriter, r *http.Request) {
 	castId := chi.URLParam(r, "castId")
 
-	cast, err := rr.GetCast(castId)
+	replicas, err := rr.ListReplicas(castId)
 	if err != nil {
 		switch e := err.(type) {
 		case conductor.CastNotFoundError:
@@ -148,7 +120,6 @@ func (rr ReplicasResource) ReplicasCastIdGet(w http.ResponseWriter, r *http.Requ
 		}
 	}
 
-	replicas := cast.ListReplicas()
 	result := make([]ReplicaResponse, 0)
 	for _, replica := range replicas {
 		item := ReplicaResponse{

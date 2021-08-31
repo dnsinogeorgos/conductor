@@ -60,9 +60,13 @@ func (pm *PortManager) GetNextAvailable() (int32, error) {
 }
 
 func (pm *PortManager) listAvailable() []int32 {
+	pm.l.Sugar().Debugf("listing available ports starting from %d to %d", pm.LowerBound, pm.UpperBound)
 	length := pm.UpperBound - pm.LowerBound + 1
+	pm.l.Sugar().Debugf("creating an array of length %d", length)
 	portList := make([]int32, length)
+	fmt.Printf("dumping portList array: %v", portList)
 
+	pm.l.Sugar().Debugf("iterating portList array")
 	for i := range portList {
 		portList[i] = pm.LowerBound + int32(i)
 	}

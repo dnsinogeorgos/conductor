@@ -1,12 +1,9 @@
 package api
 
 import (
-	"net/http"
-
 	"github.com/dnsinogeorgos/conductor/internal/conductor"
 	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/render"
 )
 
 // NewRouter creates a new chi router instance and initializes routes.
@@ -18,8 +15,6 @@ func NewRouter(cnd *conductor.Conductor) *chi.Mux {
 	r.Use(middleware.Heartbeat("/ping"))
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.NoCache)
-
-	r.Get("/cnd", FilesystemResource{cnd}.FilesystemGet)
 
 	r.Mount("/casts", CastsResource{cnd}.Routes())
 	r.Mount("/replicas", ReplicasResource{cnd}.Routes())
@@ -54,14 +49,4 @@ func (rr ReplicasResource) Routes() chi.Router {
 	})
 
 	return r
-}
-
-type FilesystemResource struct {
-	*conductor.Conductor
-}
-
-// FilesystemGet returns the filesystem state object
-func (fr FilesystemResource) FilesystemGet(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusOK)
-	render.JSON(w, r, fr)
 }

@@ -23,6 +23,11 @@ backoff timers will be applied to avoid flapping the main unit. will provide app
 logging to not cause confusion. this will also run concurrently and receive commands
 asynchronously through channels.
 
+### zfsmanager
+this package manages the zfs datasets. this includes pool, filesystem, snapshotting and
+cloning of the filesystem. the implementation of cast and replica objest is left to the
+conductor.
+
 ### moulder
 this package will implement the cast lifecycle. it will be called from the create cast
 method. for this, the cast state will be updated with a status value. during the
@@ -31,7 +36,7 @@ preparing phase, a template unit will be started for the lifetime of the hook ex
 ---
 
 - [x] logging
-  - [x] use error types
+  - [ ] switch to cheney errors with interfaces instead of types
   - [x] stdout for access logs, stderr for the rest
   - [x] use minimal log levels, just debug and warn
 - [x] api

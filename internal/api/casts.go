@@ -8,13 +8,16 @@ import (
 	"github.com/go-chi/render"
 )
 
+// CastsResource embeds the conductor type to allow extending it's interface with
+// handlers
 type CastsResource struct {
 	*conductor.Conductor
 }
 
+// CastResponse describes the API cast response object
 type CastResponse struct {
-	Id   string `json:"id"`
-	Date string `json:"date"`
+	Id        string `json:"id"`
+	Timestamp string `json:"timestamp"`
 }
 
 // CastsIdDelete deletes a cast from the filesystem.
@@ -24,7 +27,7 @@ func (cr CastsResource) CastsIdDelete(w http.ResponseWriter, r *http.Request) {
 	err := cr.DeleteCast(id)
 	if err != nil {
 		switch e := err.(type) {
-		case conductor.CastContainsReplicasError:
+		case conductor.CastNotEmpty:
 			w.WriteHeader(http.StatusConflict)
 			return
 		case conductor.CastNotFoundError:
@@ -57,8 +60,8 @@ func (cr CastsResource) CastsIdGet(w http.ResponseWriter, r *http.Request) {
 	}
 
 	result := CastResponse{
-		Id:   cast.Id,
-		Date: cast.Date,
+		Id:        cast.Id,
+		Timestamp: cast.Timestamp,
 	}
 	render.JSON(w, r, result)
 }
@@ -81,8 +84,8 @@ func (cr CastsResource) CastsIdPost(w http.ResponseWriter, r *http.Request) {
 	}
 
 	result := CastResponse{
-		Id:   cast.Id,
-		Date: cast.Date,
+		Id:        cast.Id,
+		Timestamp: cast.Timestamp,
 	}
 	w.WriteHeader(http.StatusCreated)
 	render.JSON(w, r, result)
@@ -95,8 +98,8 @@ func (cr CastsResource) CastsGet(w http.ResponseWriter, r *http.Request) {
 	result := make([]CastResponse, 0)
 	for _, cast := range casts {
 		item := CastResponse{
-			Id:   cast.Id,
-			Date: cast.Date,
+			Id:        cast.Id,
+			Timestamp: cast.Timestamp,
 		}
 		result = append(result, item)
 	}

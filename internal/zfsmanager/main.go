@@ -7,78 +7,78 @@ import (
 	"go.uber.org/zap"
 )
 
+// ZFSManager contains the state of the ZFS pool and datasets. It manages creation and
+// deletion of ZFS datasets and their hierarchy. Also stores some state inside the
+// datasets and communicates it upstream.
 type ZFSManager struct {
-	mu       sync.RWMutex
-	l        *zap.Logger
-	poolName string
-	// poolPath    string
-	// poolDev     string
-	fsName string
-	// fsPath      string
+	mu          sync.Mutex
+	l           *zap.Logger
+	poolName    string
+	fsName      string
 	castPath    string
 	replicaPath string
 	fs          *zfs.Dataset
-	casts       map[string]*Cast
+	casts       map[string]*cast
 }
 
+// New creates a ZFSManager object and loads the current state structure from the
+// underlying ZFS pool
 func New(pn string, pp string, pd string, fn string, fp string, cp string, rp string, logger *zap.Logger) *ZFSManager {
-	pool := CreatePool(pn, pd, pp, logger)
-	fs := CreateFilesystem(pool, fn, fp, logger)
+	pool := getCreatePool(pn, pd, pp, logger)
+	fs := getCreateFilesystem(pool, fn, fp, logger)
 
 	zm := &ZFSManager{
-		mu:       sync.RWMutex{},
-		l:        logger,
-		poolName: pn,
-		// poolPath:    pp,
-		// poolDev:     pd,
-		fsName: fn,
-		// fsPath:      fp,
+		l:           logger,
+		poolName:    pn,
+		fsName:      fn,
 		castPath:    cp,
 		replicaPath: rp,
 		fs:          fs,
-		casts:       make(map[string]*Cast),
+		casts:       make(map[string]*cast),
 	}
+
+	zm.mustLoad()
 
 	logger.Sugar().Debugf("initialized zfsmanager on %s with pool name %s and filesystem name %s", pd, pn, fn)
 
 	return zm
 }
 
-// CreatePool creates a pool if it does not exist. Always returns a pool or panics.
-func CreatePool(name string, dev string, mp string, logger *zap.Logger) *zfs.Zpool {
+// getCreatePool discovers the underlying ZFS pool and creates it if it does not exist
+func getCreatePool(name string, dev string, mp string, logger *zap.Logger) *zfs.Zpool {
 	pool, err := zfs.GetZpool(name)
 	if err != nil {
-		logger.Sugar().Debugf("pool does not exist, attempting to create: %v", err)
-
+		logger.Info("pool does not exist, creating", zap.Error(err))
 		pool, err = zfs.CreateZpool(name, nil, dev, "-m", mp)
 		if err != nil {
 			logger.Fatal("failed to create pool", zap.Error(err))
 		}
-	} else {
-		logger.Sugar().Debugf("pool found: %s", pool.Name)
 	}
+
+	logger.Sugar().Debugf("found pool %s", pool.Name)
 
 	return pool
 }
 
-// CreateFilesystem creates a filesystem in the pool if it does not exist. Always returns a dataset or panics.
-func CreateFilesystem(pool *zfs.Zpool, name string, mp string, logger *zap.Logger) *zfs.Dataset {
+// getCreateFilesystem discovers the underlying filesystem of the ZFS pool and creates
+// it if it does not exist
+func getCreateFilesystem(pool *zfs.Zpool, name string, mp string, logger *zap.Logger) *zfs.Dataset {
 	fullName := pool.Name + "/" + name
 
-	ds, err := zfs.GetDataset(fullName)
+	fs, err := zfs.GetDataset(fullName)
 	if err != nil {
-		logger.Sugar().Debugf("filesystem does not exist, attempting to create: %v", err)
+		logger.Debug("filesystem does not exist, creating", zap.Error(err))
 
 		properties := map[string]string{
 			"mountpoint": mp,
 		}
-		ds, err = zfs.CreateFilesystem(fullName, properties)
+		fs, err = zfs.CreateFilesystem(fullName, properties)
 		if err != nil {
-			logger.Fatal("failed to create zfs dataset", zap.Error(err))
+			logger.Fatal("failed to create filesystem", zap.Error(err))
 		}
-	} else {
-		logger.Sugar().Debugf("filesystem found: %s", ds.Name)
 	}
 
-	return ds
+	logger.Sugar().Debugf("found filesystem %s", fs.Name)
+
+	return fs
 }

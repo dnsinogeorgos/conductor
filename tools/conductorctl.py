@@ -44,11 +44,11 @@ ARGS = PARSER.parse_args()
 # LOGIC
 def print_table(cast_id=None):
     """Prints conductor service table."""
-    table = PrettyTable(["Date", "Cast", "Replica", "Port"])
+    table = PrettyTable(["Timestamp", "Cast", "Replica", "Port"])
     for row in populate_table(cast_id):
         table.add_row(row)
     table.set_style(MARKDOWN)
-    print(table.get_string(sortby="Date", reversesort=True))
+    print(table.get_string(sortby="Timestamp", reversesort=True))
 
 
 def put(cast_id, replica_id, force):
@@ -107,13 +107,15 @@ def populate_table(cast_id):
         for cast in get_casts():
             replicas = get_replicas(cast["id"])
             for replica in replicas:
-                rows.append([cast["date"], cast["id"], replica["id"], replica["port"]])
+                rows.append(
+                    [cast["timestamp"], cast["id"], replica["id"], replica["port"]]
+                )
             if not replicas:
-                rows.append([cast["date"], cast["id"], "-", ""])
+                rows.append([cast["timestamp"], cast["id"], "-", ""])
     else:
         cast = get_cast(cast_id)
         for replica in get_replicas(cast["id"]):
-            rows.append([cast["date"], cast["id"], replica["id"], replica["port"]])
+            rows.append([cast["timestamp"], cast["id"], replica["id"], replica["port"]])
     return rows
 
 

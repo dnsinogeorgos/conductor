@@ -1,4 +1,0 @@
-{"level":"info","ts":1630182205.485013,"caller":"conductor/load.go:54","msg":"loaded 10 casts from filesystem maria"}
-{"level":"info","ts":1630182205.5221367,"caller":"conductor/load.go:24","msg":"loaded 5 replicas from 10 casts"}
-{"level":"info","ts":1630182205.522408,"caller":"cmd/conductor.go:41","msg":"server started"}
-{"level":"warn","service":"conductor","httpRequest":{"proto":"HTTP/1.1","remoteIP":"127.0.0.1:40440","requestID":"ubuntu-focal/LHcay8DfMD-000001","requestMethod":"POST","requestPath":"/casts/dine","requestURL":"http://localhost:8080/casts/dine"},"httpResponse":{"body":"","bytes":0,"elapsed":0.13485,"header":{"cache-control":"no-cache, no-store, no-transform, must-revalidate, private, max-age=0","expires":"Thu, 01 Jan 1970 00:00:00 UTC","pragma":"no-cache","x-accel-expires":"0"},"status":409},"timestamp":"2021-08-28T20:23:29.41557472Z","message":"Response: 409 Client Error"}

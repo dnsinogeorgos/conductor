@@ -73,6 +73,13 @@ func (cnd *Conductor) loadReplicas(castId string) (map[string]*Replica, error) {
 	}
 	for _, replicaId := range replicaIds {
 		port, _ := cnd.zm.GetReplicaPort(castId, replicaId)
+		if err != nil {
+			return replicas, err
+		}
+		err = cnd.pm.Bind(port, castId+"/"+replicaId)
+		if err != nil {
+			return replicas, err
+		}
 
 		replicas[replicaId] = &Replica{
 			Id:   replicaId,

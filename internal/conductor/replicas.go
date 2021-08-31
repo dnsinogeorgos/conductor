@@ -28,6 +28,13 @@ func (cnd *Conductor) DeleteReplica(castId, id string) error {
 		return err
 	}
 
+	replica := cast.replicas[id]
+	cnd.l.Sugar().Debugf("releasing port for replica '%s' in cast '%s'", id, castId)
+	err = cnd.pm.Release(replica.Port)
+	if err != nil {
+		return err
+	}
+
 	cnd.l.Sugar().Debugf("deleting replica '%s' in cast '%s'", id, castId)
 	delete(cast.replicas, id)
 
@@ -61,6 +68,11 @@ func (cnd *Conductor) CreateReplica(castId, id string) (*Replica, error) {
 	cnd.mu.Lock()
 	defer cnd.mu.Unlock()
 
+	port, err := cnd.pm.GetNextAvailable()
+	if err != nil {
+		return &Replica{}, err
+	}
+
 	if _, ok := cnd.casts[castId]; !ok {
 		cnd.l.Sugar().Debugf("cannot create replica '%s' in cast '%s', cast not found", id, castId)
 		return &Replica{}, CastNotFoundError{castId}
@@ -72,8 +84,14 @@ func (cnd *Conductor) CreateReplica(castId, id string) (*Replica, error) {
 		return &Replica{}, ReplicaAlreadyExistsError{castId, id}
 	}
 
+	cnd.l.Sugar().Debugf("binding port for replica '%s' in cast '%s'", id, castId)
+	err = cnd.pm.Bind(port, castId+"/"+id)
+	if err != nil {
+		return &Replica{}, err
+	}
+
 	cnd.l.Sugar().Debugf("creating replica '%s' dataset in cast '%s'", id, castId)
-	err := cnd.zm.CreateReplicaDataset(castId, id, 0)
+	err = cnd.zm.CreateReplicaDataset(castId, id, port)
 	if err != nil {
 		return &Replica{}, err
 	}
@@ -81,7 +99,7 @@ func (cnd *Conductor) CreateReplica(castId, id string) (*Replica, error) {
 	cnd.l.Sugar().Debugf("creating replica '%s' in cast '%s'", id, castId)
 	replica := &Replica{
 		Id:   id,
-		Port: 0,
+		Port: port,
 	}
 	cast.replicas[id] = replica
 

@@ -1,6 +1,5 @@
 # Database Conductor
-Creates a ZFS pool on a block device, manages an hierarchy of snapshots and clones. In
-tandem 
+Creates a ZFS pool on a block device, manages an hierarchy of snapshots and clones.  
 Includes tool to control the conductor service (conductorctl.py).
 
 ### Nomenclature:

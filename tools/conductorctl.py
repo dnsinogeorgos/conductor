@@ -205,7 +205,7 @@ def delete_replica(cast_id, replica_id):
 
 
 # WIRING
-if ARGS.action == "ls":
+if ARGS.action == "list":
     if ARGS.replica or ARGS.force is True:
         PARSER.error("action {} accepts only --cast argument".format(ARGS.action))
 

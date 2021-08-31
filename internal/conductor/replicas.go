@@ -6,6 +6,11 @@ type Replica struct {
 	Port int32
 }
 
+// getUniqueReplicaName returns the unique replica name
+func (cnd *Conductor) getUniqueReplicaName(castId, id string) string {
+	return castId + "_" + id
+}
+
 // DeleteReplica orchestrates the deletion of a replica using the underlying managers
 func (cnd *Conductor) DeleteReplica(castId, id string) error {
 	cnd.mu.Lock()
@@ -68,6 +73,7 @@ func (cnd *Conductor) CreateReplica(castId, id string) (*Replica, error) {
 	cnd.mu.Lock()
 	defer cnd.mu.Unlock()
 
+	cnd.l.Sugar().Debugf("getting next available port for replica '%s' in cast '%s'", id, castId)
 	port, err := cnd.pm.GetNextAvailable()
 	if err != nil {
 		return &Replica{}, err
@@ -84,8 +90,9 @@ func (cnd *Conductor) CreateReplica(castId, id string) (*Replica, error) {
 		return &Replica{}, ReplicaAlreadyExistsError{castId, id}
 	}
 
+	urn := cnd.getUniqueReplicaName(castId, id)
 	cnd.l.Sugar().Debugf("binding port for replica '%s' in cast '%s'", id, castId)
-	err = cnd.pm.Bind(port, castId+"/"+id)
+	err = cnd.pm.Bind(port, urn)
 	if err != nil {
 		return &Replica{}, err
 	}

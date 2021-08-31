@@ -76,7 +76,9 @@ func (cnd *Conductor) loadReplicas(castId string) (map[string]*Replica, error) {
 		if err != nil {
 			return replicas, err
 		}
-		err = cnd.pm.Bind(port, castId+"/"+replicaId)
+		urn := cnd.getUniqueReplicaName(castId, replicaId)
+		cnd.l.Sugar().Debugf("binding port for replica '%s' in cast '%s'", replicaId, castId)
+		err = cnd.pm.Bind(port, urn)
 		if err != nil {
 			return replicas, err
 		}

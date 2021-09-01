@@ -11,6 +11,6 @@
   "cast_path": "/maria_cast",
   "replica_path": "/maria_replica",
   "port_from": 3307,
-  "port_to": 3399,
+  "port_to": 3328,
   "main_unit_name": "mariadb.service"
 }

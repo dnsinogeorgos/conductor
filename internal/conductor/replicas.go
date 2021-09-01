@@ -1,8 +1,6 @@
 package conductor
 
-import (
-	"go.uber.org/zap"
-)
+import "go.uber.org/zap"
 
 // Replica contains the state of a replica
 type Replica struct {
@@ -78,11 +76,7 @@ func (cnd *Conductor) CreateReplica(castId, id string) (*Replica, error) {
 	defer cnd.mu.Unlock()
 
 	cnd.l.Sugar().Debugf("getting next available port for replica '%s' in cast '%s'", id, castId)
-	port, err := cnd.pm.GetNextAvailable()
-	if err != nil {
-		cnd.l.Error("could not find available port", zap.Error(err))
-		return &Replica{}, PortsExhaustedError{s: err.Error()}
-	}
+	port, portErr := cnd.pm.GetNextAvailable()
 
 	if _, ok := cnd.casts[castId]; !ok {
 		cnd.l.Sugar().Debugf("cannot create replica '%s' in cast '%s', cast not found", id, castId)
@@ -97,7 +91,11 @@ func (cnd *Conductor) CreateReplica(castId, id string) (*Replica, error) {
 
 	urn := cnd.getUniqueReplicaName(castId, id)
 	cnd.l.Sugar().Debugf("binding port for replica '%s' in cast '%s'", id, castId)
-	err = cnd.pm.Bind(port, urn)
+	if portErr != nil {
+		cnd.l.Warn("configured range of ports is exhausted", zap.Error(portErr))
+		return &Replica{}, PortsExhaustedError{s: portErr.Error()}
+	}
+	err := cnd.pm.Bind(port, urn)
 	if err != nil {
 		return &Replica{}, err
 	}

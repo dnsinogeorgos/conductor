@@ -16,7 +16,7 @@ type PortsExhaustedError struct {
 }
 
 func (e PortsExhaustedError) Error() string {
-	return fmt.Sprintf("configured range of ports is exhausted")
+	return fmt.Sprintf("configured amount of resources exhausted")
 }
 
 type PortNotFoundError struct {

@@ -1,6 +1,8 @@
 package conductor
 
-import "fmt"
+import (
+	"fmt"
+)
 
 type CastAlreadyExistsError struct {
 	c string
@@ -42,4 +44,12 @@ type ReplicaNotFoundError struct {
 
 func (e ReplicaNotFoundError) Error() string {
 	return fmt.Sprintf("replica %s not found in cast %s", e.r, e.c)
+}
+
+type PortsExhaustedError struct {
+	s string
+}
+
+func (e PortsExhaustedError) Error() string {
+	return e.s
 }

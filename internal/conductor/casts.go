@@ -32,7 +32,7 @@ func (cnd *Conductor) DeleteCast(id string) error {
 		return err
 	}
 
-	cnd.l.Sugar().Debugf("deleting cast '%s'", id)
+	cnd.l.Sugar().Infof("deleting cast '%s'", id)
 	delete(cnd.casts, id)
 
 	return nil
@@ -68,7 +68,7 @@ func (cnd *Conductor) CreateCast(id string) (*Cast, error) {
 		return &Cast{}, err
 	}
 
-	cnd.l.Sugar().Debugf("creating cast '%s'", id)
+	cnd.l.Sugar().Infof("creating cast '%s'", id)
 	cast := &Cast{
 		Id:        id,
 		Timestamp: timestamp.Format(time.RFC3339),

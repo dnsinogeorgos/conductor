@@ -45,6 +45,8 @@ preparing phase, a template unit will be started for the lifetime of the hook ex
   - [ ] support different zfs setups
 - [ ] portmanager
   - [ ] add proper code comments
+  - [ ] reserve unused ports
+    https://pkg.go.dev/github.com/google/netstack/tcpip/ports
 - [ ] servicemanager
   - [x] main service stop/start
   - [ ] replica service start/stop

@@ -4,6 +4,7 @@ go 1.17
 
 require (
 	github.com/coreos/go-systemd/v22 v22.3.2
+	github.com/dnsinogeorgos/signal v0.0.0-20210901214510-8587a861f9ef
 	github.com/go-chi/chi v1.5.4
 	github.com/go-chi/chi/v5 v5.0.3
 	github.com/go-chi/render v1.0.1

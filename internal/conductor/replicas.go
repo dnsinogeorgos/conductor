@@ -1,5 +1,9 @@
 package conductor
 
+import (
+	"go.uber.org/zap"
+)
+
 // Replica contains the state of a replica
 type Replica struct {
 	Id   string
@@ -40,7 +44,7 @@ func (cnd *Conductor) DeleteReplica(castId, id string) error {
 		return err
 	}
 
-	cnd.l.Sugar().Debugf("deleting replica '%s' in cast '%s'", id, castId)
+	cnd.l.Sugar().Infof("deleting replica '%s' in cast '%s'", id, castId)
 	delete(cast.replicas, id)
 
 	return nil
@@ -76,7 +80,8 @@ func (cnd *Conductor) CreateReplica(castId, id string) (*Replica, error) {
 	cnd.l.Sugar().Debugf("getting next available port for replica '%s' in cast '%s'", id, castId)
 	port, err := cnd.pm.GetNextAvailable()
 	if err != nil {
-		return &Replica{}, err
+		cnd.l.Error("could not find available port", zap.Error(err))
+		return &Replica{}, PortsExhaustedError{s: err.Error()}
 	}
 
 	if _, ok := cnd.casts[castId]; !ok {
@@ -103,7 +108,7 @@ func (cnd *Conductor) CreateReplica(castId, id string) (*Replica, error) {
 		return &Replica{}, err
 	}
 
-	cnd.l.Sugar().Debugf("creating replica '%s' in cast '%s'", id, castId)
+	cnd.l.Sugar().Infof("creating replica '%s' in cast '%s'", id, castId)
 	replica := &Replica{
 		Id:   id,
 		Port: port,

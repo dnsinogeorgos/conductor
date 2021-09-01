@@ -42,6 +42,13 @@ func New(cfg *config.Config, logger *zap.Logger) *Conductor {
 	return conductor
 }
 
+func (cnd *Conductor) Shutdown() {
+	cnd.l.Info("received signal, shutting down")
+
+	cnd.mu.Lock()
+	cnd.l.Info("goodbye")
+}
+
 // loadCasts discovers the underlying casts and populates their current state
 func (cnd *Conductor) loadCasts() (map[string]*Cast, error) {
 	casts := make(map[string]*Cast)

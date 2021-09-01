@@ -6,12 +6,14 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"syscall"
 
 	"go.uber.org/zap"
 
 	"github.com/dnsinogeorgos/conductor/internal/api"
 	"github.com/dnsinogeorgos/conductor/internal/conductor"
 	"github.com/dnsinogeorgos/conductor/internal/config"
+	"github.com/dnsinogeorgos/signal"
 )
 
 const appName = "conductor"
@@ -37,6 +39,17 @@ func run() error {
 
 	cnd := conductor.New(cfg, logger)
 	logger.Info("server started")
+
+	sigs := make([]*signal.Signal, 0)
+	sigConstants := []syscall.Signal{syscall.SIGINT, syscall.SIGQUIT, syscall.SIGTERM}
+	for _, sig := range sigConstants {
+		sigs = append(sigs, &signal.Signal{
+			Signal:  sig,
+			Exit:    true,
+			Handler: cnd.Shutdown,
+		})
+	}
+	signal.Handle(sigs)
 
 	router := api.NewRouter(cnd)
 	addr := cfg.Address + ":" + strconv.Itoa(int(cfg.Port))

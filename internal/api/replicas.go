@@ -18,6 +18,7 @@ type ReplicaResponse struct {
 	Id     string `json:"id"`
 	CastId string `json:"castId"`
 	Port   int32  `json:"port"`
+	Error  string `json:"error,omitempty"`
 }
 
 // ReplicasCastIdIdDelete deletes a replica from the provided cast.
@@ -86,6 +87,16 @@ func (rr ReplicasResource) ReplicasCastIdIdPost(w http.ResponseWriter, r *http.R
 			return
 		case conductor.ReplicaAlreadyExistsError:
 			w.WriteHeader(http.StatusConflict)
+			return
+		case conductor.PortsExhaustedError:
+			result := ReplicaResponse{
+				CastId: castId,
+				Id:     id,
+				Port:   0,
+				Error:  e.Error(),
+			}
+			w.WriteHeader(http.StatusServiceUnavailable)
+			render.JSON(w, r, result)
 			return
 		default:
 			_ = e

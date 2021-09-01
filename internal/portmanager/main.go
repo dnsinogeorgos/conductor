@@ -1,8 +1,6 @@
 package portmanager
 
 import (
-	"fmt"
-
 	"go.uber.org/zap"
 )
 
@@ -14,6 +12,14 @@ type PortManager struct {
 }
 
 func New(start int32, end int32, logger *zap.Logger) *PortManager {
+	if end < start {
+		logger.Fatal("bad configuration: end port cannot be lower than start port")
+	}
+
+	if start == 0 {
+		logger.Fatal("bad configuration: start port cannot be 0")
+	}
+
 	portMap := make(map[int32]string)
 	pm := &PortManager{
 		l:          logger,
@@ -22,14 +28,28 @@ func New(start int32, end int32, logger *zap.Logger) *PortManager {
 		PortMap:    portMap,
 	}
 
-	logger.Sugar().Debugf("initialized portmanager with range %d to %d", start, end)
+	logger.Sugar().Infof("initialized portmanager with range %d to %d", start, end)
 
 	return pm
 }
 
 func (pm *PortManager) Bind(port int32, name string) error {
+	isValid := false
+
+	portList := pm.listAvailable()
+	for _, tryPort := range portList {
+		if port == tryPort {
+			isValid = true
+			break
+		}
+	}
+	if isValid == false {
+		pm.l.Sugar().Fatalf("incompatible configuration: tried to bind port %d which is outside of the configured range", port)
+	}
+
 	if n, found := pm.PortMap[port]; found {
-		return PortInUseError{s: fmt.Sprintf("port %d is currently in use by %s\n", port, n)}
+		pm.l.Sugar().Fatalf("found inconsistent state: port %d is currently in use by %s", port, n)
+		return PortInUseError{p: port, n: n}
 	}
 
 	pm.l.Sugar().Debugf("binding name %s to port %d", name, port)
@@ -40,7 +60,8 @@ func (pm *PortManager) Bind(port int32, name string) error {
 
 func (pm *PortManager) Release(port int32) error {
 	if _, found := pm.PortMap[port]; !found {
-		return PortNotFoundError{s: fmt.Sprintf("port %d not found in list of bound ports\n", port)}
+		pm.l.Sugar().Fatalf("found inconsistent state: port %d not found in list of used ports", port)
+		return PortNotFoundError{p: port}
 	}
 
 	pm.l.Sugar().Debugf("releasing port %d", port)
@@ -56,17 +77,13 @@ func (pm *PortManager) GetNextAvailable() (int32, error) {
 		}
 	}
 
-	return 0, PortsExhaustedError{s: fmt.Sprintf("available number of ports (%d) exhausted\n", len(portList))}
+	return 0, PortsExhaustedError{}
 }
 
 func (pm *PortManager) listAvailable() []int32 {
-	pm.l.Sugar().Debugf("listing available ports starting from %d to %d", pm.LowerBound, pm.UpperBound)
 	length := pm.UpperBound - pm.LowerBound + 1
-	pm.l.Sugar().Debugf("creating an array of length %d", length)
 	portList := make([]int32, length)
-	fmt.Printf("dumping portList array: %v", portList)
 
-	pm.l.Sugar().Debugf("iterating portList array")
 	for i := range portList {
 		portList[i] = pm.LowerBound + int32(i)
 	}

@@ -19,30 +19,30 @@ func (cnd *Conductor) DeleteReplica(castId, id string) error {
 	defer cnd.mu.Unlock()
 
 	if _, ok := cnd.casts[castId]; !ok {
-		cnd.l.Sugar().Debugf("cannot delete replica '%s' in cast '%s', cast not found", id, castId)
+		cnd.l.Debug("cannot delete replica, cast not found", zap.String("cast", castId), zap.String("replica", id))
 		return CastNotFoundError{castId}
 	}
 
 	cast := cnd.casts[castId]
 	if _, ok := cast.replicas[id]; !ok {
-		cnd.l.Sugar().Debugf("cannot delete replica '%s' in cast '%s', replica not found", id, castId)
+		cnd.l.Debug("cannot delete replica, replica not found", zap.String("cast", castId), zap.String("replica", id))
 		return ReplicaNotFoundError{castId, id}
 	}
 
-	cnd.l.Sugar().Debugf("deleting replica '%s' dataset in cast '%s'", id, castId)
+	cnd.l.Debug("deleting replica dataset", zap.String("cast", castId), zap.String("replica", id))
 	err := cnd.zm.DeleteReplicaDataset(castId, id)
 	if err != nil {
 		return err
 	}
 
 	replica := cast.replicas[id]
-	cnd.l.Sugar().Debugf("releasing port for replica '%s' in cast '%s'", id, castId)
+	cnd.l.Debug("releasing port for replica", zap.String("cast", castId), zap.String("replica", id))
 	err = cnd.pm.Release(replica.Port)
 	if err != nil {
 		return err
 	}
 
-	cnd.l.Sugar().Infof("deleting replica '%s' in cast '%s'", id, castId)
+	cnd.l.Info("deleting replica object", zap.String("cast", castId), zap.String("replica", id))
 	delete(cast.replicas, id)
 
 	return nil
@@ -54,17 +54,17 @@ func (cnd *Conductor) GetReplica(castId, id string) (*Replica, error) {
 	defer cnd.mu.RUnlock()
 
 	if _, ok := cnd.casts[castId]; !ok {
-		cnd.l.Sugar().Debugf("cannot get replica '%s' in cast '%s', cast not found", id, castId)
+		cnd.l.Debug("cannot get replica, cast not found", zap.String("cast", castId), zap.String("replica", id))
 		return &Replica{}, CastNotFoundError{castId}
 	}
 
 	cast := cnd.casts[castId]
 	if _, ok := cast.replicas[id]; !ok {
-		cnd.l.Sugar().Debugf("cannot get replica '%s' in cast '%s', replica not found", id, castId)
+		cnd.l.Debug("cannot get replica, replica not found", zap.String("cast", castId), zap.String("replica", id))
 		return &Replica{}, ReplicaNotFoundError{castId, id}
 	}
 
-	cnd.l.Sugar().Debugf("getting replica '%s' in cast '%s'", id, castId)
+	cnd.l.Debug("getting replica object", zap.String("cast", castId), zap.String("replica", id))
 	replica := cast.replicas[id]
 
 	return replica, nil
@@ -75,24 +75,23 @@ func (cnd *Conductor) CreateReplica(castId, id string) (*Replica, error) {
 	cnd.mu.Lock()
 	defer cnd.mu.Unlock()
 
-	cnd.l.Sugar().Debugf("getting next available port for replica '%s' in cast '%s'", id, castId)
 	port, portErr := cnd.pm.GetNextAvailable()
 
 	if _, ok := cnd.casts[castId]; !ok {
-		cnd.l.Sugar().Debugf("cannot create replica '%s' in cast '%s', cast not found", id, castId)
+		cnd.l.Debug("cannot create replica, cast not found", zap.String("cast", castId), zap.String("replica", id))
 		return &Replica{}, CastNotFoundError{castId}
 	}
 
 	cast := cnd.casts[castId]
 	if _, ok := cast.replicas[id]; ok {
-		cnd.l.Sugar().Debugf("cannot create replica '%s' in cast '%s', already exists", id, castId)
+		cnd.l.Debug("cannot create replica, already exists", zap.String("cast", castId), zap.String("replica", id))
 		return &Replica{}, ReplicaAlreadyExistsError{castId, id}
 	}
 
 	urn := cnd.getUniqueReplicaName(castId, id)
-	cnd.l.Sugar().Debugf("binding port for replica '%s' in cast '%s'", id, castId)
+	cnd.l.Debug("binding port for replica", zap.String("cast", castId), zap.String("replica", id))
 	if portErr != nil {
-		cnd.l.Warn("configured range of ports is exhausted", zap.Error(portErr))
+		cnd.l.Error("configured range of ports is exhausted", zap.Error(portErr))
 		return &Replica{}, PortsExhaustedError{s: portErr.Error()}
 	}
 	err := cnd.pm.Bind(port, urn)
@@ -100,13 +99,13 @@ func (cnd *Conductor) CreateReplica(castId, id string) (*Replica, error) {
 		return &Replica{}, err
 	}
 
-	cnd.l.Sugar().Debugf("creating replica '%s' dataset in cast '%s'", id, castId)
+	cnd.l.Debug("creating replica dataset", zap.String("cast", castId), zap.String("replica", id))
 	err = cnd.zm.CreateReplicaDataset(castId, id, port)
 	if err != nil {
 		return &Replica{}, err
 	}
 
-	cnd.l.Sugar().Infof("creating replica '%s' in cast '%s'", id, castId)
+	cnd.l.Info("creating replica object", zap.String("cast", castId), zap.String("replica", id))
 	replica := &Replica{
 		Id:   id,
 		Port: port,
@@ -123,11 +122,11 @@ func (cnd *Conductor) ListReplicas(castId string) ([]*Replica, error) {
 
 	replicas := make([]*Replica, 0)
 	if _, ok := cnd.casts[castId]; !ok {
-		cnd.l.Sugar().Debugf("cannot get replicas in cast '%s', cast not found", castId)
+		cnd.l.Debug("cannot list replica objects, cast not found", zap.String("cast", castId))
 		return replicas, CastNotFoundError{castId}
 	}
 
-	cnd.l.Sugar().Debugf("listing replicas in cast '%s'", castId)
+	cnd.l.Debug("listing replica objects", zap.String("cast", castId))
 	cast := cnd.casts[castId]
 	for _, replica := range cast.replicas {
 		replicas = append(replicas, replica)

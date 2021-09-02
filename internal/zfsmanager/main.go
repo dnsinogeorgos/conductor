@@ -39,7 +39,7 @@ func New(pn string, pp string, pd string, fn string, fp string, cp string, rp st
 
 	zm.mustLoad()
 
-	logger.Sugar().Debugf("initialized zfsmanager on %s with pool name %s and filesystem name %s", pd, pn, fn)
+	logger.Debug("initialized zfsmanager", zap.String("device", pd), zap.String("pool", pn), zap.String("filesystem", fn))
 
 	return zm
 }
@@ -55,7 +55,7 @@ func getCreatePool(name string, dev string, mp string, logger *zap.Logger) *zfs.
 		}
 	}
 
-	logger.Sugar().Debugf("found pool %s", pool.Name)
+	logger.Debug("found pool", zap.String("pool", pool.Name))
 
 	return pool
 }
@@ -78,7 +78,7 @@ func getCreateFilesystem(pool *zfs.Zpool, name string, mp string, logger *zap.Lo
 		}
 	}
 
-	logger.Sugar().Debugf("found filesystem %s", fs.Name)
+	logger.Debug("found filesystem", zap.String("filesystem", fs.Name))
 
 	return fs
 }

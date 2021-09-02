@@ -2,7 +2,6 @@ package zfsmanager
 
 import (
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"strings"
@@ -42,19 +41,19 @@ func (zm *ZFSManager) CreateCastDataset(id string) (time.Time, error) {
 	name := zm.castFullName(id)
 
 	if _, ok := zm.casts[name]; ok {
-		zm.l.Sugar().Errorf("cannot create cast '%s', already exists", id)
+		zm.l.Error("cannot create cast, already exists", zap.String("cast", id))
 		return time.Time{}, CastAlreadyExistsError{id}
 	}
 
-	zm.l.Sugar().Debugf("snapshotting cast '%s'", id)
+	zm.l.Debug("snapshotting cast", zap.String("cast", id))
 	timestamp := time.Now().UTC()
 	snapshot, err := zm.fs.Snapshot(id, false)
 	if err != nil {
-		zm.l.Fatal(fmt.Sprintf("failed to snapshot cast '%s'", id), zap.Error(err))
+		zm.l.Fatal("failed to snapshot cast", zap.String("cast", id), zap.Error(err))
 		return time.Time{}, err
 	}
 
-	zm.l.Sugar().Debugf("cloning snapshot for cast '%s'", id)
+	zm.l.Debug("cloning snapshot for cast", zap.String("cast", id))
 	mountPoint := zm.castPath + "/" + id
 	p := map[string]string{
 		"mountpoint": mountPoint,
@@ -62,11 +61,11 @@ func (zm *ZFSManager) CreateCastDataset(id string) (time.Time, error) {
 	dsName := zm.fs.Name + "/" + id
 	dataset, err := snapshot.Clone(dsName, p)
 	if err != nil {
-		zm.l.Fatal(fmt.Sprintf("failed to clone snapshot of cast '%s'", id), zap.Error(err))
+		zm.l.Fatal("failed to clone snapshot", zap.String("cast", id), zap.Error(err))
 		return time.Time{}, err
 	}
 
-	zm.l.Sugar().Debugf("preparing cast '%s'", id)
+	zm.l.Debug("preparing cast", zap.String("cast", id))
 	replicas := make(map[string]*replica)
 	cast := &cast{
 		ds:        dataset,
@@ -78,24 +77,24 @@ func (zm *ZFSManager) CreateCastDataset(id string) (time.Time, error) {
 	ss := strings.Split(cast.ds.Name, "/")
 	s := ss[len(ss)-1] + "/" + castStateFile
 
-	zm.l.Debug("marshaling cast state to json")
+	zm.l.Debug("marshaling cast state to json", zap.String("cast", id))
 	b, err := json.MarshalIndent(&CastState{
 		Id:        cast.id,
 		Timestamp: cast.timestamp,
 	}, "", "  ")
 	if err != nil {
-		zm.l.Sugar().Errorf("failed to marshal state json to '%s'", zm.castPath+"/"+s)
+		zm.l.Error("failed to marshal cast state json", zap.String("path", zm.castPath+"/"+s))
 		return time.Time{}, err
 	}
 
-	zm.l.Sugar().Debugf("writing cast state file to %s", cast.ds.Mountpoint+"/"+castStateFile)
+	zm.l.Debug("writing cast state file", zap.String("path", cast.ds.Mountpoint+"/"+castStateFile))
 	err = ioutil.WriteFile(cast.ds.Mountpoint+"/"+castStateFile, b, 0644)
 	if err != nil {
-		zm.l.Sugar().Errorf("failed to write cast state file %s", cast.ds.Mountpoint+"/"+castStateFile)
+		zm.l.Error("failed to write cast state file", zap.String("path", cast.ds.Mountpoint+"/"+castStateFile))
 		return time.Time{}, err
 	}
 
-	zm.l.Sugar().Debugf("creating cast '%s'", id)
+	zm.l.Debug("creating cast", zap.String("cast", id))
 	zm.casts[name] = cast
 
 	return timestamp, nil
@@ -109,55 +108,55 @@ func (zm *ZFSManager) DeleteCastDataset(id string) error {
 
 	name := zm.castFullName(id)
 	if _, ok := zm.casts[name]; !ok {
-		zm.l.Sugar().Errorf("cannot delete cast '%s', not found", id)
+		zm.l.Error("cannot delete cast, not found", zap.String("cast", id))
 		return CastNotFoundError{id}
 	}
 
 	cast := zm.casts[name]
 	if len(cast.replicas) != 0 {
-		zm.l.Sugar().Errorf("cannot delete cast '%s', not empty", id)
+		zm.l.Error("cannot delete cast, not empty", zap.String("cast", id))
 		return CastNotEmpty{id}
 	}
 
-	zm.l.Sugar().Debugf("getting parent snapshot of cast '%s'", id)
+	zm.l.Debug("getting parent snapshot of cast", zap.String("cast", id))
 	origin, err := zfs.GetDataset(cast.ds.Origin)
 	if err != nil {
-		zm.l.Fatal(fmt.Sprintf("failed to get parent snapshot of cast '%s'", id), zap.Error(err))
+		zm.l.Fatal("failed to get parent snapshot", zap.String("cast", id), zap.Error(err))
 		return err
 	}
 
-	zm.l.Sugar().Debugf("deleting cast '%s' dataset", id)
+	zm.l.Debug("deleting cast dataset", zap.String("cast", id))
 	err = cast.ds.Destroy(0)
 	if err != nil {
-		zm.l.Fatal(fmt.Sprintf("failed to delete cast '%s' dataset", id), zap.Error(err))
+		zm.l.Fatal("failed to delete cast dataset", zap.String("cast", id), zap.Error(err))
 		return err
 	}
 
-	zm.l.Sugar().Debugf("deleting parent snapshot of cast '%s'", id)
+	zm.l.Debug("deleting parent snapshot", zap.String("cast", id))
 	err = origin.Destroy(0)
 	if err != nil {
-		zm.l.Fatal(fmt.Sprintf("failed to delete parent snapshot of cast '%s'", id), zap.Error(err))
+		zm.l.Fatal("failed to delete parent snapshot", zap.String("cast", id), zap.Error(err))
 		return err
 	}
 
-	zm.l.Sugar().Debugf("deleting cast '%s'", id)
+	zm.l.Debug("deleting cast", zap.String("cast", id))
 	delete(zm.casts, name)
 
-	zm.l.Sugar().Debugf("cleaning up after deletion of cast '%s'", id)
+	zm.l.Debug("cleaning up after deletion", zap.String("cast", id))
 	mountPoint := cast.ds.Mountpoint
 	err = os.Remove(mountPoint)
 	if err != nil {
-		zm.l.Fatal(fmt.Sprintf("failed to delete mountpoint of cast '%s'", id), zap.Error(err))
+		zm.l.Fatal("failed to delete mountpoint", zap.String("cast", id), zap.Error(err))
 		return err
 	}
 	err = os.Remove(zm.replicaPath + "/" + id)
 	if err != nil {
 		_, ok := err.(*os.PathError)
 		if !ok {
-			zm.l.Fatal(fmt.Sprintf("failed to delete replica path of cast '%s'", id), zap.Error(err))
+			zm.l.Fatal("failed to delete replica path of cast", zap.String("cast", id), zap.Error(err))
 			return err
 		}
-		zm.l.Sugar().Debugf("did not find replica path of cast '%s'. skipping...", id)
+		zm.l.Debug("did not find replica path. skipping...", zap.String("cast", id))
 	}
 
 	return nil
@@ -184,7 +183,7 @@ func (zm *ZFSManager) GetCastTimestamp(id string) (time.Time, error) {
 	name := zm.castFullName(id)
 
 	if _, ok := zm.casts[name]; !ok {
-		zm.l.Sugar().Errorf("cannot get cast '%s' timestamp, not found", id)
+		zm.l.Error("cannot get cast timestamp, not found", zap.String("cast", id))
 		return time.Time{}, CastNotFoundError{id}
 	}
 	cast := zm.casts[name]

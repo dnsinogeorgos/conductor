@@ -2,7 +2,6 @@ package zfsmanager
 
 import (
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"strings"
@@ -42,21 +41,21 @@ func (zm *ZFSManager) CreateReplicaDataset(castId, id string, port int32) error 
 	name := zm.replicaFullName(castId, id)
 
 	if _, ok := zm.casts[castName]; !ok {
-		zm.l.Sugar().Errorf("cannot create replica '%s', cast '%s' not found", id, castId)
+		zm.l.Error("cannot create replica, cast not found", zap.String("cast", castId), zap.String("replica", id))
 		return CastNotFoundError{castId}
 	}
 
 	cast := zm.casts[castName]
 
 	if _, ok := cast.replicas[name]; ok {
-		zm.l.Sugar().Errorf("cannot create replica '%s' in cast '%s', already exists", id, castId)
+		zm.l.Error("cannot create replica, already exists", zap.String("cast", castId), zap.String("replica", id))
 		return ReplicaAlreadyExistsError{castId, id}
 	}
 
-	zm.l.Sugar().Debugf("snapshotting replica %s in cast %s", id, castId)
+	zm.l.Debug("snapshotting replica", zap.String("cast", castId), zap.String("replica", id))
 	snapshot, err := cast.ds.Snapshot(id, false)
 	if err != nil {
-		zm.l.Fatal(fmt.Sprintf("failed to snapshot replica '%s' in cast '%s'", id, castId), zap.Error(err))
+		zm.l.Fatal("failed to snapshot replica ", zap.String("cast", castId), zap.String("replica", id), zap.Error(err))
 		return err
 	}
 
@@ -65,15 +64,15 @@ func (zm *ZFSManager) CreateReplicaDataset(castId, id string, port int32) error 
 		"mountpoint": mountPoint,
 	}
 
-	zm.l.Sugar().Debugf("cloning snapshot for replica '%s' in cast '%s'", id, castId)
+	zm.l.Debug("cloning snapshot for replica", zap.String("cast", castId), zap.String("replica", id))
 	dsName := zm.fs.Name + "/" + castId + "/" + id
 	ds, err := snapshot.Clone(dsName, p)
 	if err != nil {
-		zm.l.Fatal(fmt.Sprintf("failed to clone snapshot for replica '%s' in cast '%s'", id, castId), zap.Error(err))
+		zm.l.Fatal("failed to clone snapshot", zap.String("cast", castId), zap.String("replica", id), zap.Error(err))
 		return err
 	}
 
-	zm.l.Sugar().Debugf("preparing replica '%s' in cast '%s'", id, castId)
+	zm.l.Debug("preparing replica", zap.String("cast", castId), zap.String("replica", id))
 	replica := &replica{
 		ds:   ds,
 		id:   id,
@@ -83,24 +82,24 @@ func (zm *ZFSManager) CreateReplicaDataset(castId, id string, port int32) error 
 	ss := strings.Split(replica.ds.Name, "/")
 	s := ss[len(ss)-1] + "/" + replicaStateFile
 
-	zm.l.Debug("marshaling replica state to json")
+	zm.l.Debug("marshaling replica state to json", zap.String("cast", castId), zap.String("replica", id))
 	b, err := json.MarshalIndent(&ReplicaState{
 		Id:   replica.id,
 		Port: replica.port,
 	}, "", "  ")
 	if err != nil {
-		zm.l.Sugar().Errorf("failed to marshal state json to '%s'", zm.replicaPath+"/"+s)
+		zm.l.Error("failed to marshal replica state json", zap.String("path", zm.replicaPath+"/"+s))
 		return err
 	}
 
-	zm.l.Sugar().Debugf("writing cast state file to %s", replica.ds.Mountpoint+"/"+replicaStateFile)
+	zm.l.Debug("writing cast state file", zap.String("path", replica.ds.Mountpoint+"/"+replicaStateFile))
 	err = ioutil.WriteFile(replica.ds.Mountpoint+"/"+replicaStateFile, b, 0644)
 	if err != nil {
-		zm.l.Sugar().Errorf("failed to write replica state file %s", replica.ds.Mountpoint+"/"+replicaStateFile)
+		zm.l.Error("failed to write replica state file", zap.String("path", replica.ds.Mountpoint+"/"+replicaStateFile))
 		return err
 	}
 
-	zm.l.Sugar().Debugf("creating replica '%s' in cast '%s'", id, castId)
+	zm.l.Debug("creating replica", zap.String("cast", castId), zap.String("replica", id))
 	cast.replicas[name] = replica
 
 	return nil
@@ -116,41 +115,41 @@ func (zm *ZFSManager) DeleteReplicaDataset(castId, id string) error {
 	name := zm.replicaFullName(castId, id)
 
 	if _, ok := zm.casts[castName]; !ok {
-		zm.l.Sugar().Errorf("cannot delete replica '%s', cast '%s' not found", id, castId)
+		zm.l.Error("cannot delete replica, cast not found", zap.String("cast", castId), zap.String("replica", id))
 		return CastNotFoundError{castId}
 	}
 
 	cast := zm.casts[castName]
 
 	if _, ok := cast.replicas[name]; !ok {
-		zm.l.Sugar().Errorf("cannot delete replica '%s' in cast '%s', not found", id, castId)
+		zm.l.Error("cannot delete replica, not found", zap.String("cast", castId), zap.String("replica", id))
 		return ReplicaNotFoundError{castId, id}
 	}
 
 	replica := cast.replicas[name]
 
-	zm.l.Sugar().Debugf("getting parent snapshot of replica '%s' in cast '%s'", id, castId)
+	zm.l.Debug("getting parent snapshot", zap.String("cast", castId), zap.String("replica", id))
 	origin, err := zfs.GetDataset(replica.ds.Origin)
 	if err != nil {
-		zm.l.Fatal(fmt.Sprintf("failed to get parent snapshot of replica '%s' in cast '%s'", id, castId), zap.Error(err))
+		zm.l.Fatal("failed to get parent snapshot", zap.String("cast", castId), zap.String("replica", id), zap.Error(err))
 		return err
 	}
 
-	zm.l.Sugar().Debugf("deleting replica '%s' dataset in cast '%s'", id, castId)
+	zm.l.Debug("deleting replica dataset", zap.String("cast", castId), zap.String("replica", id))
 	err = replica.ds.Destroy(0)
 	if err != nil {
-		zm.l.Fatal(fmt.Sprintf("failed to delete replica '%s' dataset in cast '%s'", id, castId), zap.Error(err))
+		zm.l.Fatal("failed to delete replica dataset", zap.String("cast", castId), zap.String("replica", id), zap.Error(err))
 		return err
 	}
 
-	zm.l.Sugar().Debugf("deleting parent snapshot of replica '%s' in cast '%s'", id, castId)
+	zm.l.Debug("deleting parent snapshot", zap.String("cast", castId), zap.String("replica", id))
 	err = origin.Destroy(0)
 	if err != nil {
-		zm.l.Fatal(fmt.Sprintf("failed to delete parent snapshot of replica '%s' in cast '%s'", id, castId), zap.Error(err))
+		zm.l.Fatal("failed to delete parent snapshot", zap.String("cast", castId), zap.String("replica", id), zap.Error(err))
 		return err
 	}
 
-	zm.l.Sugar().Debugf("deleting replica '%s' in cast '%s'", id, castId)
+	zm.l.Debug("deleting replica", zap.String("cast", castId), zap.String("replica", id))
 	delete(cast.replicas, name)
 
 	mountPoint := replica.ds.Mountpoint
@@ -170,7 +169,7 @@ func (zm *ZFSManager) GetReplicaIds(castId string) ([]string, error) {
 	castName := zm.castFullName(castId)
 
 	if _, ok := zm.casts[castName]; !ok {
-		zm.l.Sugar().Errorf("cannot get replica ids of cast '%s', not found", castId)
+		zm.l.Error("cannot get replica ids, cast not found", zap.String("cast", castId))
 		return nil, CastNotFoundError{castId}
 	}
 
@@ -192,13 +191,13 @@ func (zm *ZFSManager) GetReplicaPort(castId, id string) (int32, error) {
 	name := zm.replicaFullName(castId, id)
 
 	if _, ok := zm.casts[castName]; !ok {
-		zm.l.Sugar().Errorf("cannot get replica '%s' port, cast '%s' not found", id, castId)
+		zm.l.Error("cannot get replica port, cast not found", zap.String("cast", castId), zap.String("replica", id))
 		return 0, CastNotFoundError{castId}
 	}
 
 	cast := zm.casts[castName]
 	if _, ok := cast.replicas[name]; !ok {
-		zm.l.Sugar().Errorf("cannot get replica '%s' port, not found", id)
+		zm.l.Error("cannot get replica port, not found", zap.String("cast", castId), zap.String("replica", id))
 		return 0, ReplicaNotFoundError{castId, id}
 	}
 

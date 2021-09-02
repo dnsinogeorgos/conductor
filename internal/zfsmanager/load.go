@@ -23,7 +23,7 @@ func (zm *ZFSManager) loadCasts() error {
 	zm.l.Debug("iterating cast datasets")
 	for _, castDataset := range children {
 		if castDataset.Type == "filesystem" {
-			zm.l.Sugar().Debugf("loading cast %s from filesystem", castDataset.Name)
+			zm.l.Debug("loading cast from filesystem", zap.String("cast", castDataset.Name))
 
 			cast := &cast{
 				ds:       castDataset,
@@ -38,30 +38,30 @@ func (zm *ZFSManager) loadCasts() error {
 		}
 	}
 
-	zm.l.Sugar().Infof("loaded %d casts from filesystem %s", len(zm.casts), zm.fsName)
+	zm.l.Info("loaded casts from filesystem", zap.Int("casts", len(zm.casts)), zap.String("filesystem", zm.fsName))
 	return nil
 }
 
 // loadCastState loads the state stored inside the cast dataset
 func (zm *ZFSManager) loadCastState(cast *cast) error {
-	zm.l.Sugar().Debugf("reading cast state from %s", zm.castPath)
+	zm.l.Debug("reading cast state", zap.String("path", zm.castPath))
 	ss := strings.Split(cast.ds.Name, "/")
 	s := ss[len(ss)-1] + "/" + castStateFile
 	f, e := ioutil.ReadFile(zm.castPath + "/" + s)
 	if e != nil {
-		zm.l.Sugar().Errorf("failed to read cast state file %s", zm.castPath+"/"+s)
+		zm.l.Error("failed to read cast state file", zap.String("path", zm.castPath+"/"+s))
 		return e
 	}
 
-	zm.l.Sugar().Debugf("unmarshaling cast state json from %s", zm.castPath+"/"+s)
+	zm.l.Debug("unmarshaling cast state json", zap.String("path", zm.castPath+"/"+s))
 	fcast := &CastState{}
 	e = json.Unmarshal(f, fcast)
 	if e != nil {
-		zm.l.Sugar().Errorf("failed to unmarshal cast state json from '%s'", zm.castPath+"/"+s)
+		zm.l.Error("failed to unmarshal cast state json", zap.String("path", zm.castPath+"/"+s))
 		return e
 	}
 
-	zm.l.Sugar().Debugf("loading cast '%s' state", fcast.Id)
+	zm.l.Debug("loading cast state", zap.String("cast", fcast.Id))
 	cast.id = fcast.Id
 	cast.timestamp = fcast.Timestamp
 
@@ -77,22 +77,22 @@ func (zm *ZFSManager) loadReplicas(castId string) error {
 	castName := zm.castFullName(castId)
 
 	if _, ok := zm.casts[castName]; !ok {
-		zm.l.Sugar().Fatalf("cannot load cast '%s', not found", castId)
+		zm.l.Fatal("cannot load cast, not found", zap.String("cast", castId))
 		return CastNotFoundError{castName}
 	}
 	cast := zm.casts[castName]
 
-	zm.l.Debug("reading replica datasets")
+	zm.l.Debug("reading replica datasets", zap.String("cast", castId))
 	children, err := cast.ds.Children(1)
 	if err != nil {
 		zm.l.Fatal("failed to read replica datasets", zap.Error(err))
 		return err
 	}
 
-	zm.l.Debug("iterating replica datasets")
+	zm.l.Debug("iterating replica datasets", zap.String("cast", castId))
 	for _, replicaDataset := range children {
 		if replicaDataset.Type == "filesystem" {
-			zm.l.Sugar().Debugf("loading replica %s from cast %s", replicaDataset.Name, cast.id)
+			zm.l.Debug("loading replica", zap.String("replica", replicaDataset.Name), zap.String("cast", cast.id))
 
 			replica := &replica{
 				ds:     replicaDataset,
@@ -107,30 +107,30 @@ func (zm *ZFSManager) loadReplicas(castId string) error {
 		}
 	}
 
-	zm.l.Sugar().Infof("loaded %d replicas from cast %s", len(cast.replicas), cast.id)
+	zm.l.Info("loaded replicas", zap.Int("replicas", len(cast.replicas)), zap.String("cast", cast.id))
 	return nil
 }
 
 // loadCastState loads the state stored inside the replica dataset
 func (zm *ZFSManager) loadReplicaState(replica *replica) error {
-	zm.l.Sugar().Debugf("reading replica state from '%s'", zm.replicaPath)
+	zm.l.Debug("reading replica state", zap.String("path", zm.replicaPath))
 	ss := strings.Split(replica.ds.Name, "/")
 	s := ss[len(ss)-1] + "/" + replicaStateFile
 	f, e := ioutil.ReadFile(zm.replicaPath + "/" + replica.parent.id + "/" + s)
 	if e != nil {
-		zm.l.Sugar().Errorf("failed to read replica state file %s", zm.replicaPath+"/"+s)
+		zm.l.Error("failed to read replica state file", zap.String("path", zm.replicaPath+"/"+s))
 		return e
 	}
 
-	zm.l.Sugar().Debugf("unmarshaling replica state json from %s", zm.replicaPath+"/"+s)
+	zm.l.Debug("unmarshaling replica state json", zap.String("path", zm.replicaPath+"/"+s))
 	freplica := &ReplicaState{}
 	e = json.Unmarshal(f, freplica)
 	if e != nil {
-		zm.l.Sugar().Errorf("failed to unmarshal replica state json from '%s'", zm.replicaPath+"/"+s)
+		zm.l.Error("failed to unmarshal replica state json", zap.String("path", zm.replicaPath+"/"+s))
 		return e
 	}
 
-	zm.l.Sugar().Debugf("loading replica '%s' state", freplica.Id)
+	zm.l.Debug("loading replica state", zap.String("replica", freplica.Id))
 	replica.id = freplica.Id
 	replica.port = freplica.Port
 

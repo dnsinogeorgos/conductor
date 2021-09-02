@@ -2,6 +2,8 @@ package conductor
 
 import (
 	"time"
+
+	"go.uber.org/zap"
 )
 
 // Cast contains the state of a cast and it's child relationships
@@ -17,22 +19,22 @@ func (cnd *Conductor) DeleteCast(id string) error {
 	defer cnd.mu.Unlock()
 
 	if _, ok := cnd.casts[id]; !ok {
-		cnd.l.Sugar().Debugf("cannot delete cast '%s', not found", id)
+		cnd.l.Debug("cannot delete cast, not found", zap.String("cast", id))
 		return CastNotFoundError{id}
 	}
 
 	if len(cnd.casts[id].replicas) != 0 {
-		cnd.l.Sugar().Debugf("cannot delete cast '%s', not empty", id)
+		cnd.l.Debug("cannot delete cast, not empty", zap.String("cast", id))
 		return CastNotEmpty{id}
 	}
 
-	cnd.l.Sugar().Debugf("deleting cast '%s' dataset", id)
+	cnd.l.Debug("deleting cast dataset", zap.String("cast", id))
 	err := cnd.zm.DeleteCastDataset(id)
 	if err != nil {
 		return err
 	}
 
-	cnd.l.Sugar().Infof("deleting cast '%s'", id)
+	cnd.l.Info("deleting cast object", zap.String("cast", id))
 	delete(cnd.casts, id)
 
 	return nil
@@ -44,11 +46,11 @@ func (cnd *Conductor) GetCast(id string) (*Cast, error) {
 	defer cnd.mu.RUnlock()
 
 	if _, ok := cnd.casts[id]; !ok {
-		cnd.l.Sugar().Debugf("cannot get cast '%s', not found", id)
+		cnd.l.Debug("cannot get cast, not found", zap.String("cast", id))
 		return &Cast{}, CastNotFoundError{id}
 	}
 
-	cnd.l.Sugar().Debugf("getting cast '%s'", id)
+	cnd.l.Debug("getting cast object", zap.String("cast", id))
 	return cnd.casts[id], nil
 }
 
@@ -58,17 +60,17 @@ func (cnd *Conductor) CreateCast(id string) (*Cast, error) {
 	defer cnd.mu.Unlock()
 
 	if _, ok := cnd.casts[id]; ok {
-		cnd.l.Sugar().Debugf("cannot create cast '%s', already exists", id)
+		cnd.l.Debug("cannot create cast, already exists", zap.String("cast", id))
 		return &Cast{}, CastAlreadyExistsError{id}
 	}
 
-	cnd.l.Sugar().Debugf("creating cast '%s' dataset", id)
+	cnd.l.Debug("creating cast dataset", zap.String("cast", id))
 	timestamp, err := cnd.zm.CreateCastDataset(id)
 	if err != nil {
 		return &Cast{}, err
 	}
 
-	cnd.l.Sugar().Infof("creating cast '%s'", id)
+	cnd.l.Info("creating cast object", zap.String("cast", id))
 	cast := &Cast{
 		Id:        id,
 		Timestamp: timestamp.Format(time.RFC3339),
@@ -84,7 +86,7 @@ func (cnd *Conductor) ListCasts() []*Cast {
 	cnd.mu.RLock()
 	defer cnd.mu.RUnlock()
 
-	cnd.l.Sugar().Debugf("listing casts")
+	cnd.l.Debug("listing cast objects")
 	casts := make([]*Cast, 0)
 	for _, cast := range cnd.casts {
 		casts = append(casts, cast)

@@ -37,7 +37,7 @@ func (um *UnitManager) StartMainUnit() error {
 		um.l.Error("failed to start main unit", zap.Error(err))
 	}
 
-	um.l.Sugar().Debugf("systemd job %d returned %s", jid, <-ch)
+	um.l.Debug("systemd start main unit", zap.Int("job_id", jid), zap.String("value", <-ch))
 
 	return nil
 }
@@ -51,7 +51,7 @@ func (um *UnitManager) StopMainUnit() error {
 		um.l.Error("failed to stop main unit", zap.Error(err))
 	}
 
-	um.l.Sugar().Debugf("systemd job %d returned %s", jid, <-ch)
+	um.l.Debug("systemd stop main unit", zap.Int("job_id", jid), zap.String("value", <-ch))
 
 	return nil
 }

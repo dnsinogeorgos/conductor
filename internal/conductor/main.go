@@ -84,7 +84,7 @@ func (cnd *Conductor) loadReplicas(castId string) (map[string]*Replica, error) {
 			return replicas, err
 		}
 		urn := cnd.getUniqueReplicaName(castId, replicaId)
-		cnd.l.Sugar().Debugf("binding port for replica '%s' in cast '%s'", replicaId, castId)
+		cnd.l.Debug("binding port for replica", zap.String("cast", castId), zap.String("replica", replicaId))
 		err = cnd.pm.Bind(port, urn)
 		if err != nil {
 			return replicas, err
@@ -110,7 +110,7 @@ func (cnd *Conductor) mustLoad() {
 	for _, cast := range casts {
 		replicas, err := cnd.loadReplicas(cast.Id)
 		if err != nil {
-			cnd.l.Fatal("failed to populate conductor with replicas")
+			cnd.l.Fatal("failed to populate cast with replicas", zap.String("cast", cast.Id))
 			return
 		}
 

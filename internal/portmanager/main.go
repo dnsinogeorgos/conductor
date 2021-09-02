@@ -28,7 +28,7 @@ func New(start int32, end int32, logger *zap.Logger) *PortManager {
 		PortMap:    portMap,
 	}
 
-	logger.Sugar().Infof("initialized portmanager with range %d to %d", start, end)
+	logger.Info("initialized portmanager with range", zap.Int32("start_port", start), zap.Int32("end_port", end))
 
 	return pm
 }
@@ -44,15 +44,15 @@ func (pm *PortManager) Bind(port int32, name string) error {
 		}
 	}
 	if isValid == false {
-		pm.l.Sugar().Fatalf("incompatible configuration: tried to bind port %d which is outside of the configured range", port)
+		pm.l.Fatal("incompatible configuration: tried to bind port outside of configured range", zap.Int32("port", port))
 	}
 
 	if n, found := pm.PortMap[port]; found {
-		pm.l.Sugar().Fatalf("found inconsistent state: port %d is currently in use by %s", port, n)
+		pm.l.Fatal("found inconsistent state: port is currently in use", zap.String("used_by", name), zap.Int32("port", port))
 		return PortInUseError{p: port, n: n}
 	}
 
-	pm.l.Sugar().Debugf("binding name %s to port %d", name, port)
+	pm.l.Debug("binding name to port", zap.String("name", name), zap.Int32("port", port))
 	pm.PortMap[port] = name
 
 	return nil
@@ -60,11 +60,11 @@ func (pm *PortManager) Bind(port int32, name string) error {
 
 func (pm *PortManager) Release(port int32) error {
 	if _, found := pm.PortMap[port]; !found {
-		pm.l.Sugar().Fatalf("found inconsistent state: port %d not found in list of used ports", port)
+		pm.l.Fatal("found inconsistent state: port not found in list of used ports", zap.Int32("port", port))
 		return PortNotFoundError{p: port}
 	}
 
-	pm.l.Sugar().Debugf("releasing port %d", port)
+	pm.l.Debug("releasing port", zap.Int32("port", port))
 	delete(pm.PortMap, port)
 	return nil
 }

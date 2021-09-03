@@ -1,5 +1,5 @@
 [Unit]
-Description=Database conductor
+Description=Replica conductor
 Wants=network.target
 After=network.target
 

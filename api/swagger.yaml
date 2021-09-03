@@ -1,6 +1,6 @@
 openapi: 3.0.2
 info:
-  title: Database Conductor
+  title: Replica Conductor
   version: 0.1.0
 
 servers:

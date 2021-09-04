@@ -1,5 +1,5 @@
 {
-  "debug":  true,
+  "debug":  false,
   "address": "0.0.0.0",
   "port": 8080,
 
@@ -12,5 +12,8 @@
   "replica_path": "/maria_replica",
   "port_from": 3307,
   "port_to": 3328,
-  "main_unit_name": "mariadb.service"
+  "main_unit": "mariadb.service",
+  "config_template_path": "/vagrant/configs/myservice.cnf.tmpl",
+  "unit_template_string": "mariadb@{{ .Name }}.service",
+  "config_path_template_string": "/etc/my.{{ .Name }}.cnf"
 }

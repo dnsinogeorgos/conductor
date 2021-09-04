@@ -32,9 +32,14 @@ func (zm *ZFSManager) castFullName(id string) string {
 	return zm.poolName + "/" + zm.fsName + "/" + id
 }
 
+// CastMountPoint returns the mount point path of the cast
+func (zm *ZFSManager) CastMountPoint(id string) string {
+	return zm.castPath + "/" + id
+}
+
 // CreateCastDataset orchestrates the creation of a cast dataset onto the underlying
 // ZFS filesystem
-func (zm *ZFSManager) CreateCastDataset(id string) (time.Time, error) {
+func (zm *ZFSManager) CreateCastDataset(id string, preHook func() error, postHook func() error) (time.Time, error) {
 	zm.mu.Lock()
 	defer zm.mu.Unlock()
 
@@ -45,11 +50,21 @@ func (zm *ZFSManager) CreateCastDataset(id string) (time.Time, error) {
 		return time.Time{}, CastAlreadyExistsError{id}
 	}
 
+	err := preHook()
+	if err != nil {
+		return time.Time{}, err
+	}
+
 	zm.l.Debug("snapshotting cast", zap.String("cast", id))
 	timestamp := time.Now().UTC()
 	snapshot, err := zm.fs.Snapshot(id, false)
 	if err != nil {
 		zm.l.Fatal("failed to snapshot cast", zap.String("cast", id), zap.Error(err))
+		return time.Time{}, err
+	}
+
+	err = postHook()
+	if err != nil {
 		return time.Time{}, err
 	}
 

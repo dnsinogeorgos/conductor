@@ -31,6 +31,11 @@ func (zm *ZFSManager) replicaFullName(castId, id string) string {
 	return zm.poolName + "/" + zm.fsName + "/" + castId + "/" + id
 }
 
+// ReplicaMountPoint returns the mount point path of the replica
+func (zm *ZFSManager) ReplicaMountPoint(castId, id string) string {
+	return zm.replicaPath + "/" + castId + "/" + id
+}
+
 // CreateReplicaDataset orchestrates the creation of a replica dataset onto the underlying
 // ZFS filesystem
 func (zm *ZFSManager) CreateReplicaDataset(castId, id string, port int32) error {
@@ -59,7 +64,7 @@ func (zm *ZFSManager) CreateReplicaDataset(castId, id string, port int32) error 
 		return err
 	}
 
-	mountPoint := zm.replicaPath + "/" + castId + "/" + id
+	mountPoint := zm.ReplicaMountPoint(castId, id)
 	p := map[string]string{
 		"mountpoint": mountPoint,
 	}

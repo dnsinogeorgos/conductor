@@ -54,6 +54,8 @@ func (cnd *Conductor) GetCast(id string) (*Cast, error) {
 	return cnd.casts[id], nil
 }
 
+// TODO: Casts must bind ports and create units just like replicas
+
 // CreateCast orchestrates the creation of a cast using the underlying managers
 func (cnd *Conductor) CreateCast(id string) (*Cast, error) {
 	cnd.mu.Lock()
@@ -65,7 +67,7 @@ func (cnd *Conductor) CreateCast(id string) (*Cast, error) {
 	}
 
 	cnd.l.Debug("creating cast dataset", zap.String("cast", id))
-	timestamp, err := cnd.zm.CreateCastDataset(id)
+	timestamp, err := cnd.zm.CreateCastDataset(id, cnd.um.StopMainUnit, cnd.um.StartMainUnit)
 	if err != nil {
 		return &Cast{}, err
 	}

@@ -33,6 +33,7 @@ add-apt-repository "deb [arch=amd64] https://mirror.docker.ru/mariadb/repo/10.5/
 apt-get update
 apt-get -yq install mariadb-server
 sudo -u "$(id -nu 1000)" cp "$VAGRANT_DIR/configs/my.cnf" /home/"$(id -nu 1000)"/.my.cnf
+cp "$VAGRANT_DIR/configs/mariadb@.service" /etc/systemd/system/mariadb@.service
 
 # compile conductor and create systemd unit
 cp "$VAGRANT_DIR/init/conductor.service" /etc/systemd/system/conductor.service

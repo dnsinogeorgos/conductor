@@ -4,19 +4,18 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dnsinogeorgos/conductor/internal/portmanager"
-
-	"github.com/dnsinogeorgos/conductor/internal/zfsmanager"
-
 	"github.com/dnsinogeorgos/conductor/internal/config"
+	"github.com/dnsinogeorgos/conductor/internal/portmanager"
+	"github.com/dnsinogeorgos/conductor/internal/unitmanager"
+	"github.com/dnsinogeorgos/conductor/internal/zfsmanager"
 	"go.uber.org/zap"
 )
 
 // Conductor contains the managers and the current state structure
 type Conductor struct {
-	mu sync.RWMutex
-	l  *zap.Logger
-	// um    *unitmanager.UnitManager
+	mu    sync.RWMutex
+	l     *zap.Logger
+	um    *unitmanager.UnitManager
 	pm    *portmanager.PortManager
 	zm    *zfsmanager.ZFSManager
 	casts map[string]*Cast
@@ -24,13 +23,32 @@ type Conductor struct {
 
 // New creates a Conductor object and populates the current state structure
 func New(cfg *config.Config, logger *zap.Logger) *Conductor {
-	// um := unitmanager.New(cfg.MainUnitName, logger)
-	pm := portmanager.New(cfg.PortLowerBound, cfg.PortUpperBound, logger)
-	zm := zfsmanager.New(cfg.PoolName, cfg.PoolDev, cfg.PoolPath, cfg.FilesystemName, cfg.FilesystemPath, cfg.CastPath, cfg.ReplicaPath, logger)
+	um := unitmanager.New(
+		cfg.MainUnit,
+		cfg.ConfigTemplatePath,
+		cfg.UnitTemplateString,
+		cfg.ConfigPathTemplateString,
+		logger,
+	)
+	pm := portmanager.New(
+		cfg.PortLowerBound,
+		cfg.PortUpperBound,
+		logger,
+	)
+	zm := zfsmanager.New(
+		cfg.PoolName,
+		cfg.PoolDev,
+		cfg.PoolPath,
+		cfg.FilesystemName,
+		cfg.FilesystemPath,
+		cfg.CastPath,
+		cfg.ReplicaPath,
+		logger,
+	)
 
 	conductor := &Conductor{
-		l: logger,
-		// um:    um,
+		l:     logger,
+		um:    um,
 		pm:    pm,
 		zm:    zm,
 		casts: nil,

@@ -1,6 +1,8 @@
 package conductor
 
-import "go.uber.org/zap"
+import (
+	"go.uber.org/zap"
+)
 
 // Replica contains the state of a replica
 type Replica struct {
@@ -29,8 +31,14 @@ func (cnd *Conductor) DeleteReplica(castId, id string) error {
 		return ReplicaNotFoundError{castId, id}
 	}
 
+	urn := cnd.getUniqueReplicaName(castId, id)
+	err := cnd.um.StopUnit(urn)
+	if err != nil {
+		return err
+	}
+
 	cnd.l.Debug("deleting replica dataset", zap.String("cast", castId), zap.String("replica", id))
-	err := cnd.zm.DeleteReplicaDataset(castId, id)
+	err = cnd.zm.DeleteReplicaDataset(castId, id)
 	if err != nil {
 		return err
 	}
@@ -111,6 +119,11 @@ func (cnd *Conductor) CreateReplica(castId, id string) (*Replica, error) {
 		Port: port,
 	}
 	cast.replicas[id] = replica
+
+	err = cnd.um.StartUnit(urn, cnd.zm.ReplicaMountPoint(castId, id), port)
+	if err != nil {
+		return &Replica{}, err
+	}
 
 	return replica, nil
 }

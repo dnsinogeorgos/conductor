@@ -6,6 +6,15 @@ multiple instances of MariaDB and possibly other databases as well.
 
 NOTE: need to watch for possible SELinux and apparmor issues.
 
+##### NOTE
+```
+Before 10.4 MYSQLD_MULTI_INSTANCE was effectively --defaults-file=/etc/mysql/mariadb.conf.d/my%I.cnf
+As /etc/my.cnf included these files it was a bad choice as an
+existing single instance would include all these files. If you want to
+continue a file based multi-instance mariadbd, recommend the Configuration File
+Based Mechanism above and moving /etc/mysql/mariadb.conf.d/my%I.cnf files to /etc/my%I.cnf.
+```
+
 It is a challenge to keep this tool agnostic to the service that will run on top of the
 filesystem.
 

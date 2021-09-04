@@ -1,19 +1,19 @@
 [mysqld]
 
 user                    = mysql
-pid-file                = /run/mysqld/mysqld{{ PORT }}.pid
+pid-file                = /run/mysqld/mysqld-{{ .Name }}.pid
 basedir                 = /usr
-datadir                 = {{ DATADIR }}
+datadir                 = {{ .Datadir }}
 tmpdir                  = /tmp
 lc-messages-dir         = /usr/share/mysql
 lc-messages             = en_US
 skip-external-locking
 
-socket                  = /run/mysqld/mysqld{{ PORT }}.sock
+socket                  = /run/mysqld/mysqld-{{ .Name }}.sock
 bind-address            = 0.0.0.0
-port                    = 0
+port                    = {{ .Port }}
 
-log_error = /var/log/mysql/error{{ PORT }}.log
+log_error = /var/log/mysql/error-{{ .Name }}.log
 
 expire_logs_days        = 10
 

@@ -15,16 +15,19 @@ type Config struct {
 	Address string `json:"address"`
 	Port    int32  `json:"port"`
 
-	PoolName       string `json:"pool_name" split_words:"true"`
-	PoolPath       string `json:"pool_path" split_words:"true"`
-	PoolDev        string `json:"pool_dev" split_words:"true"`
-	FilesystemName string `json:"filesystem_name" split_words:"true"`
-	FilesystemPath string `json:"filesystem_path" split_words:"true"`
-	CastPath       string `json:"cast_path" split_words:"true"`
-	ReplicaPath    string `json:"replica_path" split_words:"true"`
-	PortLowerBound int32  `json:"port_from" split_words:"true"`
-	PortUpperBound int32  `json:"port_to" split_words:"true"`
-	MainUnitName   string `json:"main_unit_name" split_words:"true"`
+	PoolName                 string `json:"pool_name" split_words:"true"`
+	PoolPath                 string `json:"pool_path" split_words:"true"`
+	PoolDev                  string `json:"pool_dev" split_words:"true"`
+	FilesystemName           string `json:"filesystem_name" split_words:"true"`
+	FilesystemPath           string `json:"filesystem_path" split_words:"true"`
+	CastPath                 string `json:"cast_path" split_words:"true"`
+	ReplicaPath              string `json:"replica_path" split_words:"true"`
+	PortLowerBound           int32  `json:"port_from" split_words:"true"`
+	PortUpperBound           int32  `json:"port_to" split_words:"true"`
+	MainUnit                 string `json:"main_unit" split_words:"true"`
+	ConfigTemplatePath       string `json:"config_template_path" split_words:"true"`
+	UnitTemplateString       string `json:"unit_template_string" split_words:"true"`
+	ConfigPathTemplateString string `json:"config_path_template_string" split_words:"true"`
 }
 
 // NewConfig creates an empty config instance.
@@ -72,8 +75,20 @@ func NewConfig(name string) (*Config, error) {
 		return &Config{}, MissingConfigurationVariableError{t: "int", n: "PortUpperBound"}
 	}
 
-	if config.MainUnitName == "" {
-		return &Config{}, MissingConfigurationVariableError{t: "string", n: "MainUnitName"}
+	if config.MainUnit == "" {
+		return &Config{}, MissingConfigurationVariableError{t: "string", n: "MainUnit"}
+	}
+
+	if config.ConfigTemplatePath == "" {
+		return &Config{}, MissingConfigurationVariableError{t: "string", n: "ConfigTemplatePath"}
+	}
+
+	if config.UnitTemplateString == "" {
+		return &Config{}, MissingConfigurationVariableError{t: "string", n: "UnitTemplateString"}
+	}
+
+	if config.ConfigPathTemplateString == "" {
+		return &Config{}, MissingConfigurationVariableError{t: "string", n: "ConfigTemplatePath"}
 	}
 
 	return &config, nil

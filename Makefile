@@ -1,5 +1,5 @@
 build:
-	go build -race cmd/conductor.go
+	go build cmd/conductor.go
 
 lint:
 	pylint tools/conductorctl.py
@@ -7,6 +7,6 @@ lint:
 	black tools/conductorctl.py
 
 run:
-	sudo ./conductor -c configs/config.json 2>> logs/stderr.log >> logs/stdout.log
+	sudo ./conductor -c configs/config.json
 
 all: build run

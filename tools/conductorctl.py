@@ -47,7 +47,7 @@ def print_table(cast_id=None):
     table = PrettyTable(["Timestamp", "Cast", "Replica", "Port"])
     for row in populate_table(cast_id):
         table.add_row(row)
-    table.set_style(MARKDOWN)
+    # table.set_style(MARKDOWN)
     print(table.get_string(sortby="Timestamp", reversesort=True))
 
 

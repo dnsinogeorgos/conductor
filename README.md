@@ -37,10 +37,11 @@ cat configs/answers.txt | sudo mariadb-secure-install
 ```
 
 Build and then run conductor with the provided configuration. Conductor logs access logs
-to stdout, and json formatted application activity to stderr.
+to stdout, and json formatted application activity to stderr. Let's redirect stdout to
+`/dev/null` to avoid the clutter.
 ```shell
 go build -race cmd/conductor.go
-sudo ./conductor -c configs/config.json
+sudo ./conductor -c configs/config.json 1>/dev/null
 ```
 
 On a separate terminal, you can use conductorctl to create casts and replicas of the
@@ -108,10 +109,10 @@ replicas.
 
 Let's have a look at the configuration values available.
 
-__debug__ is used for the zap logger. debug lowers the log level and disables json
+__debug__ is used for the zap logger. it lowers the log level and disables json
 formatting  
-__address__ is used for the router address string. If not set, `127.0.0.1` will be used.  
-__port__ is used for the router address string. If not set, `8080` will be used.
+__address__ is used for the router address string. default: `127.0.0.1`  
+__port__ is used for the router address string. default: `8080`
 
 __pool_name__ you can set the name of the zfs pool. default: `rootpool`  
 __pool_path__ you can set the path of the zfs pool. default: `/rootpool`  

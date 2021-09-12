@@ -10,7 +10,8 @@ positional arguments:
 
 optional arguments:
   -h, --help            show this help message and exit
-  -f, --force           Whether to force action by deleting child replicas or parent cast.
+  -f, --force           Whether to force action by deleting child replicas or parent
+  cast.
 """
 
 import sys
@@ -29,7 +30,9 @@ ACTIONS = ["list", "create", "delete", "refresh", "help"]
 PARSER = ArgumentParser(prog="conductorctl")
 PARSER.add_argument("action", type=str, choices=ACTIONS, help="Action to take.")
 PARSER.add_argument("cast", type=str, nargs="?", default=None, help="Name of cast.")
-PARSER.add_argument("replica", type=str, nargs="?", default=None, help="Name of replica.")
+PARSER.add_argument(
+    "replica", type=str, nargs="?", default=None, help="Name of replica."
+)
 PARSER.add_argument(
     "-f",
     "--force",

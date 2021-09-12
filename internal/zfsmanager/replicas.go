@@ -2,7 +2,6 @@ package zfsmanager
 
 import (
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"strings"
@@ -202,11 +201,6 @@ func (zm *ZFSManager) getReplicaFullName(castId, id string) string {
 func (zm *ZFSManager) saveReplicaState(replica *replica) error {
 	ss := strings.Split(replica.ds.Name, "/")
 	s := ss[len(ss)-1] + "/" + replicaStateFile
-
-	fmt.Printf("%s\n", replica.id)
-	fmt.Printf("%s\n", replica.id)
-	fmt.Printf("%s\n", replica.id)
-	fmt.Printf("%s\n", replica.id)
 
 	zm.l.Debug("marshaling replica state to json", zap.String("cast", replica.parent.id), zap.String("replica", replica.id))
 	b, err := json.MarshalIndent(&ReplicaState{

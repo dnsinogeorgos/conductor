@@ -17,7 +17,7 @@ optional arguments:
 import sys
 from argparse import ArgumentParser
 from http.client import responses as rsp
-from prettytable import PrettyTable
+from prettytable import PrettyTable, MARKDOWN
 import requests
 
 
@@ -48,6 +48,7 @@ def print_table(cast_id=None):
     table = PrettyTable(["Timestamp", "Cast", "Replica", "Port"])
     for row in populate_table(cast_id):
         table.add_row(row)
+    table.set_style(MARKDOWN)
     print(table.get_string(sortby="Timestamp", reversesort=True))
 
 

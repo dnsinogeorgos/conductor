@@ -113,23 +113,8 @@ func (zm *ZFSManager) CreateCastDataset(id string, preHook func() error, postHoo
 		timestamp: timestamp,
 	}
 
-	ss := strings.Split(cast.ds.Name, "/")
-	s := ss[len(ss)-1] + "/" + castStateFile
-
-	zm.l.Debug("marshaling cast state to json", zap.String("cast", id))
-	b, err := json.MarshalIndent(&CastState{
-		Id:        cast.id,
-		Timestamp: cast.timestamp,
-	}, "", "  ")
+	err = zm.saveCastState(cast)
 	if err != nil {
-		zm.l.Error("failed to marshal cast state json", zap.String("path", zm.castPath+"/"+s))
-		return time.Time{}, err
-	}
-
-	zm.l.Debug("writing cast state file", zap.String("path", cast.ds.Mountpoint+"/"+castStateFile))
-	err = ioutil.WriteFile(cast.ds.Mountpoint+"/"+castStateFile, b, 0644)
-	if err != nil {
-		zm.l.Error("failed to write cast state file", zap.String("path", cast.ds.Mountpoint+"/"+castStateFile))
 		return time.Time{}, err
 	}
 
@@ -204,6 +189,31 @@ func (zm *ZFSManager) DeleteCastDataset(id string) error {
 // getCastFullName returns the full dataset name of the cast
 func (zm *ZFSManager) getCastFullName(id string) string {
 	return zm.poolName + "/" + zm.fsName + "/" + id
+}
+
+// saveCastState saves the cast state into the cast dataset
+func (zm *ZFSManager) saveCastState(cast *cast) error {
+	ss := strings.Split(cast.ds.Name, "/")
+	s := ss[len(ss)-1] + "/" + castStateFile
+
+	zm.l.Debug("marshaling cast state to json", zap.String("cast", cast.id))
+	b, err := json.MarshalIndent(&CastState{
+		Id:        cast.id,
+		Timestamp: cast.timestamp,
+	}, "", "  ")
+	if err != nil {
+		zm.l.Error("failed to marshal cast state json", zap.String("path", zm.castPath+"/"+s))
+		return err
+	}
+
+	zm.l.Debug("writing cast state file", zap.String("path", cast.ds.Mountpoint+"/"+castStateFile))
+	err = ioutil.WriteFile(cast.ds.Mountpoint+"/"+castStateFile, b, 0644)
+	if err != nil {
+		zm.l.Error("failed to write cast state file", zap.String("path", cast.ds.Mountpoint+"/"+castStateFile))
+		return err
+	}
+
+	return nil
 }
 
 // loadCasts discovers the underlying casts and populates their current state

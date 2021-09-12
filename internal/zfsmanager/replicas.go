@@ -2,6 +2,7 @@ package zfsmanager
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"strings"
@@ -119,28 +120,14 @@ func (zm *ZFSManager) CreateReplicaDataset(castId, id string, port int32) error 
 
 	zm.l.Debug("preparing replica", zap.String("cast", castId), zap.String("replica", id))
 	replica := &replica{
-		ds:   ds,
-		id:   id,
-		port: port,
+		ds:     ds,
+		id:     id,
+		parent: cast,
+		port:   port,
 	}
 
-	ss := strings.Split(replica.ds.Name, "/")
-	s := ss[len(ss)-1] + "/" + replicaStateFile
-
-	zm.l.Debug("marshaling replica state to json", zap.String("cast", castId), zap.String("replica", id))
-	b, err := json.MarshalIndent(&ReplicaState{
-		Id:   replica.id,
-		Port: replica.port,
-	}, "", "  ")
+	err = zm.saveReplicaState(replica)
 	if err != nil {
-		zm.l.Error("failed to marshal replica state json", zap.String("path", zm.replicaPath+"/"+s))
-		return err
-	}
-
-	zm.l.Debug("writing cast state file", zap.String("path", replica.ds.Mountpoint+"/"+replicaStateFile))
-	err = ioutil.WriteFile(replica.ds.Mountpoint+"/"+replicaStateFile, b, 0644)
-	if err != nil {
-		zm.l.Error("failed to write replica state file", zap.String("path", replica.ds.Mountpoint+"/"+replicaStateFile))
 		return err
 	}
 
@@ -209,6 +196,36 @@ func (zm *ZFSManager) DeleteReplicaDataset(castId, id string) error {
 // getReplicaFullName returns the full dataset name of the replica
 func (zm *ZFSManager) getReplicaFullName(castId, id string) string {
 	return zm.poolName + "/" + zm.fsName + "/" + castId + "/" + id
+}
+
+// saveReplicaState saves the replica state into the replica dataset
+func (zm *ZFSManager) saveReplicaState(replica *replica) error {
+	ss := strings.Split(replica.ds.Name, "/")
+	s := ss[len(ss)-1] + "/" + replicaStateFile
+
+	fmt.Printf("%s\n", replica.id)
+	fmt.Printf("%s\n", replica.id)
+	fmt.Printf("%s\n", replica.id)
+	fmt.Printf("%s\n", replica.id)
+
+	zm.l.Debug("marshaling replica state to json", zap.String("cast", replica.parent.id), zap.String("replica", replica.id))
+	b, err := json.MarshalIndent(&ReplicaState{
+		Id:   replica.id,
+		Port: replica.port,
+	}, "", "  ")
+	if err != nil {
+		zm.l.Error("failed to marshal replica state json", zap.String("path", zm.replicaPath+"/"+s))
+		return err
+	}
+
+	zm.l.Debug("writing cast state file", zap.String("path", replica.ds.Mountpoint+"/"+replicaStateFile))
+	err = ioutil.WriteFile(replica.ds.Mountpoint+"/"+replicaStateFile, b, 0644)
+	if err != nil {
+		zm.l.Error("failed to write replica state file", zap.String("path", replica.ds.Mountpoint+"/"+replicaStateFile))
+		return err
+	}
+
+	return nil
 }
 
 // loadReplicas discovers the underlying replicas of a cast and populates their

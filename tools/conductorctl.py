@@ -1,18 +1,16 @@
 #!/usr/bin/env python3
 """
-usage: conductorctl [-h] [-c CAST] [-r REPLICA] [-f] {list,create,delete,refresh}
+usage: conductorctl [-h] [-f] {list,create,delete,refresh,help} [cast] [replica]
 
 positional arguments:
-  {list,create,delete,refresh}
+  {list,create,delete,refresh,help}
                         Action to take.
+  cast                  Name of cast.
+  replica               Name of replica.
 
 optional arguments:
   -h, --help            show this help message and exit
-  -c CAST, --cast CAST  Name of cast.
-  -r REPLICA, --replica REPLICA
-                        Name of replica.
-  -f, --force           Whether to force action by deleting child replicas or parent
-                        cast.
+  -f, --force           Whether to force action by deleting child replicas or parent cast.
 """
 
 import sys
@@ -24,14 +22,14 @@ import requests
 
 # CONSTANTS
 URL = "http://localhost:8080"
-ACTIONS = ["list", "create", "delete", "refresh"]
+ACTIONS = ["list", "create", "delete", "refresh", "help"]
 
 
 # ARGUMENT PARSING
 PARSER = ArgumentParser(prog="conductorctl")
 PARSER.add_argument("action", type=str, choices=ACTIONS, help="Action to take.")
-PARSER.add_argument("-c", "--cast", type=str, help="Name of cast.")
-PARSER.add_argument("-r", "--replica", type=str, help="Name of replica.")
+PARSER.add_argument("cast", type=str, nargs="?", default=None, help="Name of cast.")
+PARSER.add_argument("replica", type=str, nargs="?", default=None, help="Name of replica.")
 PARSER.add_argument(
     "-f",
     "--force",
@@ -204,6 +202,9 @@ def delete_replica(cast_id, replica_id):
 
 
 # WIRING
+if ARGS.action == "help":
+    PARSER.print_help()
+
 if ARGS.action == "list":
     if ARGS.replica or ARGS.force is True:
         PARSER.error("action {} accepts only --cast argument".format(ARGS.action))

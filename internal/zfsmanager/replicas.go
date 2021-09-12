@@ -26,14 +26,54 @@ type replica struct {
 	port   int32
 }
 
-// replicaFullName returns the full dataset name of the replica
-func (zm *ZFSManager) replicaFullName(castId, id string) string {
-	return zm.poolName + "/" + zm.fsName + "/" + castId + "/" + id
+// GetReplicaMountPoint returns the mount point path of the replica
+func (zm *ZFSManager) GetReplicaMountPoint(castId, id string) string {
+	return zm.replicaPath + "/" + castId + "/" + id
 }
 
-// ReplicaMountPoint returns the mount point path of the replica
-func (zm *ZFSManager) ReplicaMountPoint(castId, id string) string {
-	return zm.replicaPath + "/" + castId + "/" + id
+// GetReplicaIds returns a slice of the existing replica ids from a cast
+func (zm *ZFSManager) GetReplicaIds(castId string) ([]string, error) {
+	zm.mu.Lock()
+	defer zm.mu.Unlock()
+
+	castName := zm.getCastFullName(castId)
+
+	if _, ok := zm.casts[castName]; !ok {
+		zm.l.Error("cannot get replica ids, cast not found", zap.String("cast", castId))
+		return nil, CastNotFoundError{castId}
+	}
+
+	cast := zm.casts[castName]
+	replicaIds := make([]string, 0)
+	for _, replica := range cast.replicas {
+		replicaIds = append(replicaIds, replica.id)
+	}
+
+	return replicaIds, nil
+}
+
+// GetReplicaPort retrieves the port value from a replica state
+func (zm *ZFSManager) GetReplicaPort(castId, id string) (int32, error) {
+	zm.mu.Lock()
+	defer zm.mu.Unlock()
+
+	castName := zm.getCastFullName(castId)
+	name := zm.getReplicaFullName(castId, id)
+
+	if _, ok := zm.casts[castName]; !ok {
+		zm.l.Error("cannot get replica port, cast not found", zap.String("cast", castId), zap.String("replica", id))
+		return 0, CastNotFoundError{castId}
+	}
+
+	cast := zm.casts[castName]
+	if _, ok := cast.replicas[name]; !ok {
+		zm.l.Error("cannot get replica port, not found", zap.String("cast", castId), zap.String("replica", id))
+		return 0, ReplicaNotFoundError{castId, id}
+	}
+
+	replica := cast.replicas[name]
+
+	return replica.port, nil
 }
 
 // CreateReplicaDataset orchestrates the creation of a replica dataset onto the underlying
@@ -42,8 +82,8 @@ func (zm *ZFSManager) CreateReplicaDataset(castId, id string, port int32) error 
 	zm.mu.Lock()
 	defer zm.mu.Unlock()
 
-	castName := zm.castFullName(castId)
-	name := zm.replicaFullName(castId, id)
+	castName := zm.getCastFullName(castId)
+	name := zm.getReplicaFullName(castId, id)
 
 	if _, ok := zm.casts[castName]; !ok {
 		zm.l.Error("cannot create replica, cast not found", zap.String("cast", castId), zap.String("replica", id))
@@ -64,7 +104,7 @@ func (zm *ZFSManager) CreateReplicaDataset(castId, id string, port int32) error 
 		return err
 	}
 
-	mountPoint := zm.ReplicaMountPoint(castId, id)
+	mountPoint := zm.GetReplicaMountPoint(castId, id)
 	p := map[string]string{
 		"mountpoint": mountPoint,
 	}
@@ -116,8 +156,8 @@ func (zm *ZFSManager) DeleteReplicaDataset(castId, id string) error {
 	zm.mu.Lock()
 	defer zm.mu.Unlock()
 
-	castName := zm.castFullName(castId)
-	name := zm.replicaFullName(castId, id)
+	castName := zm.getCastFullName(castId)
+	name := zm.getReplicaFullName(castId, id)
 
 	if _, ok := zm.casts[castName]; !ok {
 		zm.l.Error("cannot delete replica, cast not found", zap.String("cast", castId), zap.String("replica", id))
@@ -166,47 +206,76 @@ func (zm *ZFSManager) DeleteReplicaDataset(castId, id string) error {
 	return nil
 }
 
-// GetReplicaIds returns a slice of the existing replica ids from a cast
-func (zm *ZFSManager) GetReplicaIds(castId string) ([]string, error) {
-	zm.mu.Lock()
-	defer zm.mu.Unlock()
-
-	castName := zm.castFullName(castId)
-
-	if _, ok := zm.casts[castName]; !ok {
-		zm.l.Error("cannot get replica ids, cast not found", zap.String("cast", castId))
-		return nil, CastNotFoundError{castId}
-	}
-
-	cast := zm.casts[castName]
-	replicaIds := make([]string, 0)
-	for _, replica := range cast.replicas {
-		replicaIds = append(replicaIds, replica.id)
-	}
-
-	return replicaIds, nil
+// getReplicaFullName returns the full dataset name of the replica
+func (zm *ZFSManager) getReplicaFullName(castId, id string) string {
+	return zm.poolName + "/" + zm.fsName + "/" + castId + "/" + id
 }
 
-// GetReplicaPort retrieves the port value from a replica state
-func (zm *ZFSManager) GetReplicaPort(castId, id string) (int32, error) {
+// loadReplicas discovers the underlying replicas of a cast and populates their
+// current state
+func (zm *ZFSManager) loadReplicas(castId string) error {
 	zm.mu.Lock()
 	defer zm.mu.Unlock()
 
-	castName := zm.castFullName(castId)
-	name := zm.replicaFullName(castId, id)
+	castName := zm.getCastFullName(castId)
 
 	if _, ok := zm.casts[castName]; !ok {
-		zm.l.Error("cannot get replica port, cast not found", zap.String("cast", castId), zap.String("replica", id))
-		return 0, CastNotFoundError{castId}
+		zm.l.Fatal("cannot load cast, not found", zap.String("cast", castId))
+		return CastNotFoundError{castName}
 	}
-
 	cast := zm.casts[castName]
-	if _, ok := cast.replicas[name]; !ok {
-		zm.l.Error("cannot get replica port, not found", zap.String("cast", castId), zap.String("replica", id))
-		return 0, ReplicaNotFoundError{castId, id}
+
+	zm.l.Debug("reading replica datasets", zap.String("cast", castId))
+	children, err := cast.ds.Children(1)
+	if err != nil {
+		zm.l.Fatal("failed to read replica datasets", zap.Error(err))
+		return err
 	}
 
-	replica := cast.replicas[name]
+	zm.l.Debug("iterating replica datasets", zap.String("cast", castId))
+	for _, replicaDataset := range children {
+		if replicaDataset.Type == "filesystem" {
+			zm.l.Debug("loading replica", zap.String("replica", replicaDataset.Name), zap.String("cast", cast.id))
 
-	return replica.port, nil
+			replica := &replica{
+				ds:     replicaDataset,
+				parent: cast,
+			}
+			err := zm.loadReplicaState(replica)
+			if err != nil {
+				return err
+			}
+
+			cast.replicas[replicaDataset.Name] = replica
+		}
+	}
+
+	zm.l.Info("loaded replicas", zap.Int("replicas", len(cast.replicas)), zap.String("cast", cast.id))
+	return nil
+}
+
+// loadReplicaState loads the state stored inside the replica dataset
+func (zm *ZFSManager) loadReplicaState(replica *replica) error {
+	zm.l.Debug("reading replica state", zap.String("path", zm.replicaPath))
+	ss := strings.Split(replica.ds.Name, "/")
+	s := ss[len(ss)-1] + "/" + replicaStateFile
+	f, e := ioutil.ReadFile(zm.replicaPath + "/" + replica.parent.id + "/" + s)
+	if e != nil {
+		zm.l.Error("failed to read replica state file", zap.String("path", zm.replicaPath+"/"+s))
+		return e
+	}
+
+	zm.l.Debug("unmarshaling replica state json", zap.String("path", zm.replicaPath+"/"+s))
+	freplica := &ReplicaState{}
+	e = json.Unmarshal(f, freplica)
+	if e != nil {
+		zm.l.Error("failed to unmarshal replica state json", zap.String("path", zm.replicaPath+"/"+s))
+		return e
+	}
+
+	zm.l.Debug("loading replica state", zap.String("replica", freplica.Id))
+	replica.id = freplica.Id
+	replica.port = freplica.Port
+
+	return nil
 }

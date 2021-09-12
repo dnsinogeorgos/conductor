@@ -136,7 +136,7 @@ gotemplate syntax is used and available variables are `{{ .Name }}` `{{ .Datadir
 `{{ .Port }}`. See `configs/myservice.cnd.tmpl` for a complete example. *required*  
 __config_path_template_string__ is the path where the configuration template will be
 rendered. gotemplate syntax is used and available variables are `{{ .Name }}` `{{ .Datadir }}` and
-`{{ .Port }}`. an example of this is `/etc/my.{{ .Name }}.cnf`. *required*
+`{{ .Port }}`. an example of this is `/etc/my.{{ .Name }}.cnf`. *required*  
 __unit_template_string__ is the systemd template unit that will be managed by conductor.
 this unit must make use of the configuration files as configured with
 `config_template_path` and `config_path_template_string`. *required*

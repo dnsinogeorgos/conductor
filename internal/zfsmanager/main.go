@@ -37,11 +37,27 @@ func New(pn string, pp string, pd string, fn string, fp string, cp string, rp st
 		casts:       make(map[string]*cast),
 	}
 
-	zm.mustLoad()
-
 	logger.Debug("initialized zfsmanager", zap.String("device", pd), zap.String("pool", pn), zap.String("filesystem", fn))
 
 	return zm
+}
+
+// MustLoad executes the load methods recursively and exits if an error occurs
+func (zm *ZFSManager) MustLoad() {
+	err := zm.loadCasts()
+	if err != nil {
+		zm.l.Fatal("failed to load cast datasets", zap.Error(err))
+		return
+	}
+
+	castIds := zm.GetCastIds()
+	for _, id := range castIds {
+		err = zm.loadReplicas(id)
+		if err != nil {
+			zm.l.Fatal("failed to load replica datasets", zap.Error(err))
+			return
+		}
+	}
 }
 
 // getCreatePool discovers the underlying ZFS pool and creates it if it does not exist

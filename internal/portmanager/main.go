@@ -4,6 +4,8 @@ import (
 	"go.uber.org/zap"
 )
 
+// PortManager contains the state of the port manager and specifies the configured
+// range. It allows binding and releasing a port number to a name (string).
 type PortManager struct {
 	l          *zap.Logger
 	LowerBound int32
@@ -11,6 +13,7 @@ type PortManager struct {
 	PortMap    map[int32]string
 }
 
+// New creates and initializes a PortManager object
 func New(start int32, end int32, logger *zap.Logger) *PortManager {
 	if end < start {
 		logger.Fatal("bad configuration: end port cannot be lower than start port")
@@ -33,10 +36,24 @@ func New(start int32, end int32, logger *zap.Logger) *PortManager {
 	return pm
 }
 
+// GetNextAvailable returns the next available port within the configured range
+func (pm *PortManager) GetNextAvailable() (int32, error) {
+	portList := pm.listPorts()
+	for _, port := range portList {
+		if _, found := pm.PortMap[port]; !found {
+			return port, nil
+		}
+	}
+
+	return 0, PortsExhaustedError{}
+}
+
+// Bind looks up the provided port in a list of available ports and binds it to a name
+// (string)
 func (pm *PortManager) Bind(port int32, name string) error {
 	isValid := false
 
-	portList := pm.listAvailable()
+	portList := pm.listPorts()
 	for _, tryPort := range portList {
 		if port == tryPort {
 			isValid = true
@@ -58,6 +75,7 @@ func (pm *PortManager) Bind(port int32, name string) error {
 	return nil
 }
 
+// Release looks up the provided port in the port manager state and removes it's entry
 func (pm *PortManager) Release(port int32) error {
 	if _, found := pm.PortMap[port]; !found {
 		pm.l.Fatal("found inconsistent state: port not found in list of used ports", zap.Int32("port", port))
@@ -69,18 +87,8 @@ func (pm *PortManager) Release(port int32) error {
 	return nil
 }
 
-func (pm *PortManager) GetNextAvailable() (int32, error) {
-	portList := pm.listAvailable()
-	for _, port := range portList {
-		if _, found := pm.PortMap[port]; !found {
-			return port, nil
-		}
-	}
-
-	return 0, PortsExhaustedError{}
-}
-
-func (pm *PortManager) listAvailable() []int32 {
+// listPorts returns a slice of the port numbers that are configured
+func (pm *PortManager) listPorts() []int32 {
 	length := pm.UpperBound - pm.LowerBound + 1
 	portList := make([]int32, length)
 

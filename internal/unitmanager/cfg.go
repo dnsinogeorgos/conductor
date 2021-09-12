@@ -7,13 +7,16 @@ import (
 	"go.uber.org/zap"
 )
 
-type unitConfig struct {
+// serviceConfig holds the systemd template unit variables
+type serviceConfig struct {
 	Name    string
 	Datadir string
 	Port    int32
 }
 
-func (um *UnitManager) getConfigPath(cfg *unitConfig) (string, error) {
+// getServiceConfigPath returns the path of for the service configuration according to the
+// configuration of the unit manager
+func (um *UnitManager) getServiceConfigPath(cfg *serviceConfig) (string, error) {
 	var configPathBuffer bytes.Buffer
 
 	err := um.configPathTemplate.Execute(&configPathBuffer, cfg)
@@ -25,14 +28,15 @@ func (um *UnitManager) getConfigPath(cfg *unitConfig) (string, error) {
 	return configPathBuffer.String(), nil
 }
 
-func (um *UnitManager) createConfig(name, datadir string, port int32) error {
-	cfg := &unitConfig{
+// createServiceConfig creates the rendered service configuration file according to configuration
+func (um *UnitManager) createServiceConfig(name, datadir string, port int32) error {
+	cfg := &serviceConfig{
 		Name:    name,
 		Datadir: datadir,
 		Port:    port,
 	}
 
-	cfgPath, err := um.getConfigPath(cfg)
+	cfgPath, err := um.getServiceConfigPath(cfg)
 	if err != nil {
 		return err
 	}
@@ -58,12 +62,13 @@ func (um *UnitManager) createConfig(name, datadir string, port int32) error {
 	return nil
 }
 
-func (um *UnitManager) cleanupConfig(name string) error {
-	cfg := &unitConfig{
+// deleteServiceConfig cleans up the rendered service configuration file
+func (um *UnitManager) deleteServiceConfig(name string) error {
+	cfg := &serviceConfig{
 		Name: name,
 	}
 
-	cfgPath, err := um.getConfigPath(cfg)
+	cfgPath, err := um.getServiceConfigPath(cfg)
 	if err != nil {
 		return err
 	}

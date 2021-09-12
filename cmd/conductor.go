@@ -38,6 +38,7 @@ func run() error {
 	defer logger.Sync()
 
 	cnd := conductor.New(cfg, logger)
+	cnd.MustLoad()
 	logger.Info("server started")
 
 	sigs := make([]*signal.Signal, 0)
@@ -45,7 +46,6 @@ func run() error {
 	for _, sig := range sigConstants {
 		sigs = append(sigs, &signal.Signal{
 			Signal:  sig,
-			Exit:    true,
 			Handler: cnd.Shutdown,
 		})
 	}

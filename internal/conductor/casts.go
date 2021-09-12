@@ -13,33 +13,6 @@ type Cast struct {
 	replicas  map[string]*Replica
 }
 
-// DeleteCast orchestrates the deletion of a cast using the underlying managers
-func (cnd *Conductor) DeleteCast(id string) error {
-	cnd.mu.Lock()
-	defer cnd.mu.Unlock()
-
-	if _, ok := cnd.casts[id]; !ok {
-		cnd.l.Debug("cannot delete cast, not found", zap.String("cast", id))
-		return CastNotFoundError{id}
-	}
-
-	if len(cnd.casts[id].replicas) != 0 {
-		cnd.l.Debug("cannot delete cast, not empty", zap.String("cast", id))
-		return CastNotEmpty{id}
-	}
-
-	cnd.l.Debug("deleting cast dataset", zap.String("cast", id))
-	err := cnd.zm.DeleteCastDataset(id)
-	if err != nil {
-		return err
-	}
-
-	cnd.l.Info("deleting cast object", zap.String("cast", id))
-	delete(cnd.casts, id)
-
-	return nil
-}
-
 // GetCast retrieves the cast object from the state
 func (cnd *Conductor) GetCast(id string) (*Cast, error) {
 	cnd.mu.RLock()
@@ -52,6 +25,20 @@ func (cnd *Conductor) GetCast(id string) (*Cast, error) {
 
 	cnd.l.Debug("getting cast object", zap.String("cast", id))
 	return cnd.casts[id], nil
+}
+
+// ListCasts returns a slice of the existing casts
+func (cnd *Conductor) ListCasts() []*Cast {
+	cnd.mu.RLock()
+	defer cnd.mu.RUnlock()
+
+	cnd.l.Debug("listing cast objects")
+	casts := make([]*Cast, 0)
+	for _, cast := range cnd.casts {
+		casts = append(casts, cast)
+	}
+
+	return casts
 }
 
 // TODO: Casts must bind ports and create units just like replicas
@@ -83,16 +70,29 @@ func (cnd *Conductor) CreateCast(id string) (*Cast, error) {
 	return cast, nil
 }
 
-// ListCasts returns a slice of the existing casts
-func (cnd *Conductor) ListCasts() []*Cast {
-	cnd.mu.RLock()
-	defer cnd.mu.RUnlock()
+// DeleteCast orchestrates the deletion of a cast using the underlying managers
+func (cnd *Conductor) DeleteCast(id string) error {
+	cnd.mu.Lock()
+	defer cnd.mu.Unlock()
 
-	cnd.l.Debug("listing cast objects")
-	casts := make([]*Cast, 0)
-	for _, cast := range cnd.casts {
-		casts = append(casts, cast)
+	if _, ok := cnd.casts[id]; !ok {
+		cnd.l.Debug("cannot delete cast, not found", zap.String("cast", id))
+		return CastNotFoundError{id}
 	}
 
-	return casts
+	if len(cnd.casts[id].replicas) != 0 {
+		cnd.l.Debug("cannot delete cast, not empty", zap.String("cast", id))
+		return CastNotEmpty{id}
+	}
+
+	cnd.l.Debug("deleting cast dataset", zap.String("cast", id))
+	err := cnd.zm.DeleteCastDataset(id)
+	if err != nil {
+		return err
+	}
+
+	cnd.l.Info("deleting cast object", zap.String("cast", id))
+	delete(cnd.casts, id)
+
+	return nil
 }

@@ -1,6 +1,7 @@
 package conductor
 
 import (
+	"os"
 	"sync"
 	"time"
 
@@ -53,18 +54,42 @@ func New(cfg *config.Config, logger *zap.Logger) *Conductor {
 		zm:    zm,
 		casts: nil,
 	}
-
-	conductor.mustLoad()
 	logger.Debug("initialized conductor")
 
 	return conductor
 }
 
+// MustLoad executes the load methods recursively and exits if an error occurs
+func (cnd *Conductor) MustLoad() {
+	cnd.zm.MustLoad()
+
+	casts, err := cnd.loadCasts()
+	if err != nil {
+		cnd.l.Fatal("failed to populate conductor with casts")
+		return
+	}
+
+	for _, cast := range casts {
+		replicas, err := cnd.loadReplicas(cast.Id)
+		if err != nil {
+			cnd.l.Fatal("failed to populate cast with replicas", zap.String("cast", cast.Id))
+			return
+		}
+
+		cast.replicas = replicas
+	}
+
+	cnd.casts = casts
+	return
+}
+
+// Shutdown waits to acquire lock and exits
 func (cnd *Conductor) Shutdown() {
 	cnd.l.Info("received signal, shutting down")
 
 	cnd.mu.Lock()
 	cnd.l.Info("goodbye")
+	os.Exit(0)
 }
 
 // loadCasts discovers the underlying casts and populates their current state
@@ -115,26 +140,4 @@ func (cnd *Conductor) loadReplicas(castId string) (map[string]*Replica, error) {
 	}
 
 	return replicas, nil
-}
-
-// mustLoad executes the load methods recursively and exits if an error occurs
-func (cnd *Conductor) mustLoad() {
-	casts, err := cnd.loadCasts()
-	if err != nil {
-		cnd.l.Fatal("failed to populate conductor with casts")
-		return
-	}
-
-	for _, cast := range casts {
-		replicas, err := cnd.loadReplicas(cast.Id)
-		if err != nil {
-			cnd.l.Fatal("failed to populate cast with replicas", zap.String("cast", cast.Id))
-			return
-		}
-
-		cast.replicas = replicas
-	}
-
-	cnd.casts = casts
-	return
 }
